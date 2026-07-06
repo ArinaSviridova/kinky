@@ -1,5 +1,5 @@
 [build]
-  command = "npm install --include=dev && npx vite build"
+  command = "pnpm build"
   publish = "dist"
 
 [functions]

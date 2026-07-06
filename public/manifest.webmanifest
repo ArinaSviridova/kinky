@@ -1,0 +1,16 @@
+{
+  "name": "Kinky Party Pre-Party Match",
+  "short_name": "Pre-Party",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#07070a",
+  "theme_color": "#07070a",
+  "icons": [
+    {
+      "src": "/kinky-logo.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -1,11 +1,10 @@
 [build]
-  command = "npm run build"
+  command = "npm install --include=dev && npx vite build"
   publish = "dist"
-  functions = "netlify/functions"
 
 [functions]
+  directory = "netlify/functions"
   node_bundler = "esbuild"
-  included_files = []
 
 [[redirects]]
   from = "/api/*"

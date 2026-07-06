@@ -1,5 +1,5 @@
 [build]
-  command = "pnpm build"
+  command = "pnpm install --prod=false --no-frozen-lockfile && pnpm exec vite build"
   publish = "dist"
 
 [functions]

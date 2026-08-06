@@ -27,6 +27,7 @@
           <button :disabled="loading">{{ t('addAdmin') }}</button>
         </form>
 
+        <p class="muted-block">{{ t('adminUserNotFound') }}</p>
         <p v-if="error" class="error">{{ error }}</p>
         <p v-if="success" class="success">{{ t('saved') }}</p>
 
@@ -37,11 +38,11 @@
             </thead>
             <tbody>
               <tr v-for="admin in admins" :key="admin.id">
-                <td>{{ admin.user?.display_name || '-' }}</td>
-                <td>{{ admin.user?.google_email || '-' }}</td>
-                <td>{{ admin.user?.telegram_username ? '@' + admin.user.telegram_username : '-' }}</td>
+                <td>{{ admin.user?.display_name || (admin.is_pending ? t('pendingAdmin') : '-') }}</td>
+                <td>{{ admin.user?.google_email || admin.pending_email || '-' }}</td>
+                <td>{{ telegramLabel(admin) }}</td>
                 <td>{{ admin.role }}</td>
-                <td>{{ admin.is_active ? t('active') : t('closed') }}</td>
+                <td>{{ admin.is_active ? (admin.is_pending ? t('pendingAdmin') : t('activeAdmin')) : t('closed') }}</td>
                 <td><button class="danger small" type="button" @click="removeAdmin(admin.id)">{{ t('removeAdmin') }}</button></td>
               </tr>
             </tbody>
@@ -64,6 +65,11 @@ const role = ref('admin');
 const loading = ref(false);
 const error = ref('');
 const success = ref(false);
+
+function telegramLabel(admin: any) {
+  const username = admin.user?.telegram_username || admin.pending_telegram_username;
+  return username ? `@${String(username).replace(/^@/, '')}` : '-';
+}
 
 async function load() {
   const data = await api<{ admins: any[] }>('admin-list-admins');

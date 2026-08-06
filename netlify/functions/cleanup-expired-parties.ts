@@ -15,7 +15,7 @@ const scheduled = schedule('@hourly', async () => {
   if (error) return { statusCode: 500, body: error.message };
 
   for (const party of expiredParties || []) {
-    await cleanupPartyData(party.id);
+    await cleanupPartyData(party.id, { deleteParty: true });
   }
 
   return { statusCode: 200, body: 'Cleanup done' };

@@ -67,9 +67,9 @@ export async function handler(event: any) {
         .or(`profile_a_id.eq.${myProfileId},profile_b_id.eq.${myProfileId}`)
       : Promise.resolve({ data: [] as any[] });
 
-    const firstPhotoPaths = profileRows
+    const firstPhotoPaths = [...new Set(profileRows
       .map((row) => Array.isArray(row.photo_urls) ? row.photo_urls[0] : null)
-      .filter(Boolean) as string[];
+      .filter(Boolean) as string[])];
 
     const [likesResult, matchesResult, signedUrls] = await Promise.all([
       likesPromise,

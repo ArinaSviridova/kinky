@@ -11,6 +11,7 @@ const backendErrorTranslations: Record<string, string> = {
   'Нужно минимум одно фото': 'At least one photo is required',
   'Можно загрузить не больше 5 фото': 'You can upload up to 5 photos',
   'Пользователь не найден. Он должен сначала войти в приложение через Google или Telegram.': 'User not found. They need to sign in with Google or Telegram first.',
+  'Вечеринка не найдена': 'Party not found',
   'Нельзя удалить последнего owner.': 'You cannot remove the last owner',
   'Нужно подтвердить возраст, правила и приватность': 'Please confirm age, rules, and privacy terms',
   'Сначала создайте свою анкету': 'Create your own profile first',

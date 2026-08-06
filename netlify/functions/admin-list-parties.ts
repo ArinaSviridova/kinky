@@ -21,6 +21,7 @@ export async function handler(event: any) {
     const { data, error: listError } = await supabase
       .from('parties')
       .select(partyColumns)
+      .eq('is_active', true)
       .order('starts_at', { ascending: false });
     if (listError) return error(listError.message, 500);
     return json({ parties: (data || []).map(publicParty) });

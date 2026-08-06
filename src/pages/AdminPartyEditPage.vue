@@ -139,7 +139,7 @@
             <button type="button" @click="copyKey">{{ copied ? t('copied') : t('copyKey') }}</button>
             <small>{{ t('keyShownOnce') }}</small>
           </div>
-          <button class="danger" @click="closeNow">{{ t('closeAndDeleteNow') }}</button>
+          <button class="danger" @click="closeNow">{{ t('deleteParty') }}</button>
         </div>
 
         <p v-if="error" class="error">{{ error }}</p>
@@ -386,8 +386,8 @@ async function copyKey() {
 }
 
 async function closeNow() {
-  if (!confirm(t('closeConfirm'))) return;
+  if (!confirm(t('deletePartyConfirm'))) return;
   await post('admin-close-party', { partyId: partyId.value });
-  alert(t('closeDone'));
+  router.push('/admin');
 }
 </script>

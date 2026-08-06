@@ -21,6 +21,8 @@ create table if not exists admin_users (
   app_user_id uuid references app_users(id) on delete cascade,
   role text not null default 'moderator' check (role in ('owner', 'admin', 'moderator', 'editor')),
   is_active boolean default true,
+  pending_email text,
+  pending_telegram_username text,
   created_at timestamptz default now(),
   unique(app_user_id)
 );
@@ -202,3 +204,19 @@ on profile_matches(profile_a_id, profile_b_id);
 
 create index if not exists idx_party_access_party_user
 on party_access(party_id, user_id);
+
+
+-- Pending admin grants: owners can add admins before first login.
+alter table admin_users add column if not exists pending_email text;
+alter table admin_users add column if not exists pending_telegram_username text;
+
+create unique index if not exists idx_admin_users_pending_email_active
+on admin_users (lower(pending_email))
+where app_user_id is null and is_active = true and pending_email is not null;
+
+create unique index if not exists idx_admin_users_pending_tg_active
+on admin_users (lower(pending_telegram_username))
+where app_user_id is null and is_active = true and pending_telegram_username is not null;
+
+create index if not exists idx_admin_users_app_user_active
+on admin_users(app_user_id, is_active);

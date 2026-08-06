@@ -49,7 +49,7 @@ export async function requireUser(event: any) {
   if (!session) throw new Error('UNAUTHORIZED');
 
   const supabase = supabaseAdmin();
-  const { data: user, error } = await supabase.from('app_users').select('*').eq('id', session.userId).single();
+  const { data: user, error } = await supabase.from('app_users').select('id,auth_provider,telegram_id,telegram_username,google_email,display_name,avatar_url,created_at,last_login_at').eq('id', session.userId).single();
   if (error || !user) throw new Error('UNAUTHORIZED');
   return user;
 }

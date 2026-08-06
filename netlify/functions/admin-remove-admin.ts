@@ -14,17 +14,18 @@ export async function handler(event: any) {
     const { data: target } = await supabase.from('admin_users').select('*').eq('id', adminId).maybeSingle();
     if (!target) return error('admin not found', 404);
 
-    if (target.role === 'owner' && target.is_active) {
+    if (target.role === 'owner' && target.is_active && target.app_user_id) {
       const { count } = await supabase
         .from('admin_users')
         .select('id', { count: 'exact', head: true })
         .eq('role', 'owner')
-        .eq('is_active', true);
+        .eq('is_active', true)
+        .not('app_user_id', 'is', null);
       if ((count || 0) <= 1) return error('Нельзя удалить последнего owner.', 400);
     }
 
-    const { error: updateError } = await supabase.from('admin_users').update({ is_active: false }).eq('id', adminId);
-    if (updateError) return error(updateError.message, 500);
+    const { error: deleteError } = await supabase.from('admin_users').delete().eq('id', adminId);
+    if (deleteError) return error(deleteError.message, 500);
     return json({ ok: true });
   } catch (e: any) {
     return error(e.message === 'FORBIDDEN' ? 'Нет доступа' : e.message, e.message === 'FORBIDDEN' ? 403 : 400);

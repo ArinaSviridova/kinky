@@ -58,3 +58,19 @@ on profile_matches(party_id, profile_b_id, profile_a_id);
 
 create index if not exists idx_parties_slug_active_access
 on parties(slug, is_active, access_opens_at, access_closes_at);
+
+
+-- Pending admin grants: owners can add admins before first login.
+alter table admin_users add column if not exists pending_email text;
+alter table admin_users add column if not exists pending_telegram_username text;
+
+create unique index if not exists idx_admin_users_pending_email_active
+on admin_users (lower(pending_email))
+where app_user_id is null and is_active = true and pending_email is not null;
+
+create unique index if not exists idx_admin_users_pending_tg_active
+on admin_users (lower(pending_telegram_username))
+where app_user_id is null and is_active = true and pending_telegram_username is not null;
+
+create index if not exists idx_admin_users_app_user_active
+on admin_users(app_user_id, is_active);

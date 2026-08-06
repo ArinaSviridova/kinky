@@ -29,6 +29,7 @@
                 <RouterLink :to="`/admin/parties/${party.id}/profiles`">{{ t('profiles') }}</RouterLink>
                 <RouterLink :to="`/admin/parties/${party.id}/reports`">{{ t('reports') }}</RouterLink>
                 <RouterLink :to="`/party/${party.slug}`">{{ t('navApp') }}</RouterLink>
+                <button class="danger small" type="button" @click="deleteParty(party)">{{ t('deleteParty') }}</button>
               </td>
             </tr>
           </tbody>
@@ -41,19 +42,34 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
 import AppShell from '@/components/AppShell.vue';
-import { api } from '@/lib/api';
+import { api, post } from '@/lib/api';
 import { localized } from '@/lib/localized';
 import { t } from '@/lib/i18n';
 
 const parties = ref<any[]>([]);
 const error = ref('');
 
+async function load() {
+  const data = await api<{ parties: any[] }>('admin-list-parties');
+  parties.value = data.parties;
+}
+
 onMounted(async () => {
   try {
-    const data = await api<{ parties: any[] }>('admin-list-parties');
-    parties.value = data.parties;
+    await load();
   } catch (e: any) {
     error.value = e.message;
   }
 });
+
+async function deleteParty(party: any) {
+  if (!confirm(t('deletePartyConfirm'))) return;
+  error.value = '';
+  try {
+    await post('admin-close-party', { partyId: party.id });
+    parties.value = parties.value.filter((item) => item.id !== party.id);
+  } catch (e: any) {
+    error.value = e.message;
+  }
+}
 </script>

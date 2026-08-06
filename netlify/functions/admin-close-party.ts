@@ -8,7 +8,7 @@ export async function handler(event: any) {
     await requireAdmin(event, ['owner', 'admin']);
     const { partyId } = parseBody(event);
     if (!partyId) return error('partyId required', 400);
-    await cleanupPartyData(partyId);
+    await cleanupPartyData(partyId, { deleteParty: true });
     return json({ ok: true });
   } catch (e: any) {
     return error(e.message === 'FORBIDDEN' ? 'Нет доступа' : e.message, e.message === 'FORBIDDEN' ? 403 : 400);

@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import { supabaseAdmin } from './_shared/supabase';
 import { createSessionToken, sessionCookie } from './_shared/auth';
 import { error, json, parseBody } from './_shared/http';
+import { activatePendingAdminGrants } from './_shared/adminGrants';
 
 function verifyTelegramAuth(data: Record<string, any>, botToken: string) {
   const { hash, ...authData } = data;
@@ -56,6 +57,8 @@ export async function handler(event: any) {
   } else {
     await supabase.from('app_users').update({ telegram_username: telegramUsername, last_login_at: new Date().toISOString() }).eq('id', user.id);
   }
+
+  await activatePendingAdminGrants(user);
 
   const token = createSessionToken({ userId: user.id, provider: 'telegram', telegramId, createdAt: Date.now() });
   return json({ ok: true }, 200, { 'Set-Cookie': sessionCookie(token) });

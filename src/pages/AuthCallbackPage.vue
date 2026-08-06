@@ -12,6 +12,7 @@ import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { supabase } from '@/lib/supabase';
 import { t } from '@/lib/i18n';
+import { resetSession } from '@/lib/session';
 
 const router = useRouter();
 const message = ref(t('authChecking'));
@@ -37,6 +38,7 @@ onMounted(async () => {
     return;
   }
 
+  resetSession();
   router.push('/enter-key');
 });
 </script>

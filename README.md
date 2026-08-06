@@ -195,3 +195,7 @@ on conflict (app_user_id) do update set role = 'owner', is_active = true;
 8. Проверить список анкет, кнопку Open и кнопку Match.
 9. Создать второго участника, поставить взаимный match и проверить вкладку Matches.
 10. В `/admin/admins` добавить и удалить админа.
+
+## UX/performance patch
+
+This patch hides the admin navigation link for non-admin users, adds an admin route guard, caches duplicate GET requests on the client, and reduces profile list payloads by signing only the first photo in list views. Full photo galleries are still loaded on the profile detail page.

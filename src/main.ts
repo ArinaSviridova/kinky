@@ -3,6 +3,7 @@ import { createRouter, createWebHistory } from 'vue-router';
 import App from './App.vue';
 import './styles/main.css';
 import { installPrivacyGuards } from './lib/privacyGuard';
+import { loadSession } from './lib/session';
 
 import LoginPage from './pages/LoginPage.vue';
 import AuthCallbackPage from './pages/AuthCallbackPage.vue';
@@ -39,6 +40,13 @@ const router = createRouter({
     { path: '/admin/parties/:partyId/profiles', component: AdminProfilesPage },
     { path: '/admin/parties/:partyId/reports', component: AdminReportsPage },
   ],
+});
+
+router.beforeEach(async (to) => {
+  if (!to.path.startsWith('/admin')) return true;
+  const session = await loadSession();
+  if (session.isAdmin) return true;
+  return '/enter-key';
 });
 
 installPrivacyGuards();

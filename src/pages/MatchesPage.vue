@@ -31,10 +31,9 @@ const party = ref<any>(null);
 const matches = ref<any[]>([]);
 
 onMounted(async () => {
-  const partyData = await api<{ party: any }>(`get-party?slug=${encodeURIComponent(slug)}`);
-  party.value = partyData.party;
-  applyTheme(party.value.theme || {});
-  const data = await api<{ matches: any[] }>(`list-matches?partyId=${party.value.id}`);
+  const data = await api<{ party: any; matches: any[] }>(`list-matches?slug=${encodeURIComponent(slug)}`);
+  party.value = data.party;
   matches.value = data.matches;
+  applyTheme(data.party.theme || {});
 });
 </script>

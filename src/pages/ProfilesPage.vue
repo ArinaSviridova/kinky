@@ -54,12 +54,10 @@ const error = ref('');
 const likingId = ref('');
 
 async function load() {
-  const partyData = await api<{ party: any }>(`get-party?slug=${encodeURIComponent(slug)}`);
-  party.value = partyData.party;
-  applyTheme(partyData.party.theme || {});
-
-  const data = await api<{ profiles: any[] }>(`list-profiles?partyId=${party.value.id}`);
+  const data = await api<{ party: any; profiles: any[] }>(`list-profiles?slug=${encodeURIComponent(slug)}`);
+  party.value = data.party;
   profiles.value = data.profiles;
+  applyTheme(data.party.theme || {});
 }
 
 onMounted(async () => {

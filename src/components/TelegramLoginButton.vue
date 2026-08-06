@@ -12,6 +12,7 @@
 <script setup lang="ts">
 import { nextTick, onMounted, onUnmounted, ref } from 'vue';
 import { t } from '@/lib/i18n';
+import { resetSession } from '@/lib/session';
 
 const emit = defineEmits<{ success: [] }>();
 const showWidget = ref(false);
@@ -47,6 +48,7 @@ onMounted(() => {
       return;
     }
 
+    resetSession();
     emit('success');
   };
 

@@ -3,11 +3,25 @@ import { supabaseAdmin } from './_shared/supabase';
 import { error, json } from './_shared/http';
 import { publicParty } from './_shared/party';
 
+const partyColumns = [
+  'id',
+  'slug',
+  'title',
+  'title_ru',
+  'title_en',
+  'starts_at',
+  'access_closes_at',
+  'is_active',
+].join(',');
+
 export async function handler(event: any) {
   try {
     await requireAdmin(event);
     const supabase = supabaseAdmin();
-    const { data, error: listError } = await supabase.from('parties').select('*').order('starts_at', { ascending: false });
+    const { data, error: listError } = await supabase
+      .from('parties')
+      .select(partyColumns)
+      .order('starts_at', { ascending: false });
     if (listError) return error(listError.message, 500);
     return json({ parties: (data || []).map(publicParty) });
   } catch (e: any) {

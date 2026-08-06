@@ -171,21 +171,20 @@ const form = reactive<any>({
 });
 
 onMounted(async () => {
-  const data = await api<{ party: any }>(`get-party?slug=${encodeURIComponent(slug)}`);
+  const data = await api<{ party: any; profile: any | null }>(`my-profile?slug=${encodeURIComponent(slug)}`);
   party.value = data.party;
   applyTheme(data.party.theme || {});
 
-  const profile = await api<{ profile: any | null }>(`my-profile?partyId=${data.party.id}`);
-  if (profile.profile) {
-    Object.assign(form, profile.profile);
-    form.bio_ru = profile.profile.bio_ru || profile.profile.bio || '';
-    form.bio_en = profile.profile.bio_en || '';
-    form.icebreaker_ru = profile.profile.icebreaker_ru || profile.profile.icebreaker || '';
-    form.icebreaker_en = profile.profile.icebreaker_en || '';
-    form.photo_urls = profile.profile.photo_urls || [];
-    photoPreviews.value = (profile.profile.photo_urls || []).map((path: string, index: number) => ({
+  if (data.profile) {
+    Object.assign(form, data.profile);
+    form.bio_ru = data.profile.bio_ru || data.profile.bio || '';
+    form.bio_en = data.profile.bio_en || '';
+    form.icebreaker_ru = data.profile.icebreaker_ru || data.profile.icebreaker || '';
+    form.icebreaker_en = data.profile.icebreaker_en || '';
+    form.photo_urls = data.profile.photo_urls || [];
+    photoPreviews.value = (data.profile.photo_urls || []).map((path: string, index: number) => ({
       path,
-      url: profile.profile.photo_urls_signed?.[index] || '/kinky-logo.png',
+      url: data.profile.photo_urls_signed?.[index] || '/kinky-logo.png',
     }));
   }
 });

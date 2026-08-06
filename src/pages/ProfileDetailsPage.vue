@@ -76,13 +76,12 @@ const error = ref('');
 const photos = computed(() => profile.value?.photo_urls_signed?.length ? profile.value.photo_urls_signed : ['/kinky-logo.png']);
 
 onMounted(async () => {
-  const partyData = await api<{ party: any }>(`get-party?slug=${encodeURIComponent(slug)}`);
-  party.value = partyData.party;
-  applyTheme(party.value.theme || {});
-  const data = await api<{ profile: any; liked: boolean; matched: boolean }>(`get-profile?partyId=${party.value.id}&profileId=${profileId}`);
+  const data = await api<{ party: any; profile: any; liked: boolean; matched: boolean }>(`get-profile?slug=${encodeURIComponent(slug)}&profileId=${profileId}`);
+  party.value = data.party;
   profile.value = data.profile;
   liked.value = data.liked;
   match.value = data.matched;
+  applyTheme(data.party.theme || {});
 });
 
 async function like() {

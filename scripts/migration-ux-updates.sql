@@ -47,3 +47,14 @@ create index if not exists idx_party_profiles_user_party on party_profiles(user_
 create index if not exists idx_profile_likes_from_to on profile_likes(from_profile_id, to_profile_id);
 create index if not exists idx_profile_matches_profiles on profile_matches(profile_a_id, profile_b_id);
 create index if not exists idx_party_access_party_user on party_access(party_id, user_id);
+create index if not exists idx_party_profiles_party_visible_created
+on party_profiles(party_id, is_visible, is_blocked, created_at desc);
+
+create index if not exists idx_profile_matches_party_a_b
+on profile_matches(party_id, profile_a_id, profile_b_id);
+
+create index if not exists idx_profile_matches_party_b_a
+on profile_matches(party_id, profile_b_id, profile_a_id);
+
+create index if not exists idx_parties_slug_active_access
+on parties(slug, is_active, access_opens_at, access_closes_at);

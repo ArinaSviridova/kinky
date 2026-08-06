@@ -21,17 +21,26 @@ export function isPartyOpenForGuests(party: any) {
 }
 
 export async function requirePartyAccess(userId: string, partyId: string) {
-  const supabase = supabaseAdmin();
+  const party = await getAccessibleParty(userId, { partyId });
+  return party;
+}
 
-  const { data: party } = await supabase.from('parties').select('*').eq('id', partyId).single();
+export async function getAccessibleParty(userId: string, params: { partyId?: string; slug?: string }) {
+  const supabase = supabaseAdmin();
+  let query = supabase.from('parties').select('*');
+  if (params.partyId) query = query.eq('id', params.partyId);
+  else if (params.slug) query = query.eq('slug', params.slug);
+  else throw new Error('PARTY_REQUIRED');
+
+  const { data: party } = await query.maybeSingle();
   if (!party || !isPartyOpenForGuests(party)) throw new Error('PARTY_CLOSED');
 
   const { data: access } = await supabase
     .from('party_access')
     .select('id')
-    .eq('party_id', partyId)
+    .eq('party_id', party.id)
     .eq('user_id', userId)
-    .single();
+    .maybeSingle();
 
   if (!access) throw new Error('NO_PARTY_ACCESS');
   return party;

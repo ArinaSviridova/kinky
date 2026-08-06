@@ -9,9 +9,23 @@
         <RouterLink class="button secondary" :to="`/party/${slug}/profile/edit`">{{ t('myProfile') }}</RouterLink>
       </div>
 
-      <div v-if="profiles.length" class="profiles-grid">
+      <p v-if="error" class="error">{{ error }}</p>
+      <div v-if="loading" class="card">{{ t('profilesTitle') }}...</div>
+
+      <div v-else-if="profiles.length" class="profiles-grid">
         <ProfileCard v-for="profile in profiles" :key="profile.id" :profile="profile">
-          <RouterLink class="button small" :to="`/party/${slug}/profiles/${profile.id}`">{{ t('open') }}</RouterLink>
+          <RouterLink class="button small" :to="`/party/${slug}/profiles/${profile.id}`">
+            {{ profile.isMine ? t('view') : t('open') }}
+          </RouterLink>
+          <button
+            v-if="!profile.isMine"
+            class="secondary small"
+            type="button"
+            :disabled="profile.isLikedByMe || likingId === profile.id"
+            @click="like(profile)"
+          >
+            {{ profile.isLikedByMe ? t('likedSent') : t('match') }}
+          </button>
         </ProfileCard>
       </div>
       <div v-else class="card">
@@ -27,7 +41,7 @@ import { onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import AppShell from '@/components/AppShell.vue';
 import ProfileCard from '@/components/ProfileCard.vue';
-import { api } from '@/lib/api';
+import { api, post } from '@/lib/api';
 import { applyTheme } from '@/lib/theme';
 import { t } from '@/lib/i18n';
 
@@ -35,13 +49,40 @@ const route = useRoute();
 const slug = String(route.params.slug);
 const party = ref<any>(null);
 const profiles = ref<any[]>([]);
+const loading = ref(true);
+const error = ref('');
+const likingId = ref('');
 
-onMounted(async () => {
+async function load() {
   const partyData = await api<{ party: any }>(`get-party?slug=${encodeURIComponent(slug)}`);
   party.value = partyData.party;
   applyTheme(partyData.party.theme || {});
 
   const data = await api<{ profiles: any[] }>(`list-profiles?partyId=${party.value.id}`);
   profiles.value = data.profiles;
+}
+
+onMounted(async () => {
+  try {
+    await load();
+  } catch (e: any) {
+    error.value = e.message;
+  } finally {
+    loading.value = false;
+  }
 });
+
+async function like(profile: any) {
+  error.value = '';
+  likingId.value = profile.id;
+  try {
+    const data = await post<{ matched: boolean }>('like-profile', { partyId: party.value.id, toProfileId: profile.id });
+    profile.isLikedByMe = true;
+    profile.isMatched = data.matched;
+  } catch (e: any) {
+    error.value = e.message;
+  } finally {
+    likingId.value = '';
+  }
+}
 </script>

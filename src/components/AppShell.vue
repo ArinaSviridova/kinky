@@ -10,7 +10,9 @@
         <RouterLink v-if="partySlug" :to="`/party/${partySlug}/profiles`">{{ t('navProfiles') }}</RouterLink>
         <RouterLink v-if="partySlug" :to="`/party/${partySlug}/matches`">{{ t('navMatches') }}</RouterLink>
         <RouterLink v-if="partySlug" :to="`/party/${partySlug}/rules`">{{ t('navRules') }}</RouterLink>
+        <RouterLink to="/enter-key">{{ t('navApp') }}</RouterLink>
         <RouterLink to="/admin">{{ t('navAdmin') }}</RouterLink>
+        <button class="link-button" type="button" @click="logout">{{ t('logout') }}</button>
         <LanguageSwitch />
       </nav>
     </header>
@@ -21,9 +23,17 @@
 </template>
 
 <script setup lang="ts">
+import { useRouter } from 'vue-router';
 import LanguageSwitch from '@/components/LanguageSwitch.vue';
 import { t } from '@/lib/i18n';
+import { post } from '@/lib/api';
 
 const props = defineProps<{ partySlug?: string }>();
-const homeTo = props.partySlug ? `/party/${props.partySlug}` : '/enter-key';
+const router = useRouter();
+const homeTo = '/enter-key';
+
+async function logout() {
+  await post('logout', {});
+  router.push('/login');
+}
 </script>

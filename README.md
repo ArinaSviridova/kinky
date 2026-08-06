@@ -1,144 +1,140 @@
-# Kinky Party Pre-Match MVP
+# Pre-Party Match
 
 Vue 3 + Vite + Supabase + Netlify Functions.
 
-Это первая версия закрытого pre-party пространства:
+Закрытое pre-party пространство для участников вечеринок:
 
 - отдельная анкета под каждую вечеринку;
-- без сохранения шаблона для следующих мероприятий;
-- доступ за неделю до вечеринки;
-- доступ после вечеринки 48 часов;
-- один общий ключ, который генерирует админ по кнопке;
-- Telegram обязателен, но скрыт до взаимного мэтча;
-- фото обязательно;
-- админка отдельно;
-- правила, дресс-код, Pinterest-ссылки и тема редактируются в админке;
-- автоматическая очистка данных после закрытия доступа.
-
-Да, это уже маленький продукт. Нет, это не “просто анкетка”. Такова печальная правда веб-разработки.
+- доступ по коду от организаторов;
+- сохранение доступа в `party_access`, чтобы пользователь не вводил код повторно после logout/login;
+- анкеты RU/EN;
+- тексты вечеринки RU/EN;
+- до 5 фото в анкете;
+- Telegram скрыт до взаимного мэтча;
+- админка для вечеринок, кодов доступа, анкет, жалоб и администраторов;
+- логотип и обложка загружаются в Supabase Storage;
+- PWA-иконки лежат в `public/icons`.
 
 ---
 
-## 1. Что внутри
+## Что внутри
 
 ```text
 public/kinky-logo.png                логотип
+public/icons/                        PWA-иконки
 src/                                 Vue frontend
 netlify/functions/                   backend на Netlify Functions
-scripts/schema.sql                   SQL для Supabase
+scripts/schema.sql                   полная SQL-схема
+scripts/migration-ux-updates.sql     миграция для уже существующей базы
 netlify.toml                         настройки деплоя
 .env.example                         пример переменных окружения
 ```
 
 ---
 
-## 2. Установка локально
+## Установка локально
 
 ```bash
-npm install
+pnpm install
 cp .env.example .env
-npm run dev
+pnpm dev
 ```
 
 Для локальной проверки Netlify Functions:
 
 ```bash
-npm install -g netlify-cli
+pnpm add -g netlify-cli
 netlify dev
 ```
 
 ---
 
-## 3. Supabase: что создать
+## Supabase
 
-### 3.1. Создай проект Supabase
-
-Нужны:
-
-- Project URL;
-- anon public key;
-- service role key.
-
-`anon key` можно использовать на фронте.
-
-`service role key` нельзя использовать на фронте. Никогда. Даже “временно”. Особенно “временно”.
-
-### 3.2. Прогони SQL
+### Новый проект
 
 Открой Supabase Dashboard -> SQL Editor -> вставь `scripts/schema.sql` -> Run.
 
-### 3.3. Создай Storage bucket
+### Уже существующий проект
 
-Supabase Dashboard -> Storage -> New bucket:
+Перед деплоем этой версии выполни:
 
 ```text
-party-photos
+scripts/migration-ux-updates.sql
 ```
 
-Рекомендация: bucket private.
+Миграция добавляет bilingual-поля, bucket `event-assets` и индексы для ускорения списков.
 
-Фото грузятся через signed upload URL, который выдаёт backend. Потом backend отдаёт signed view URL для просмотра.
+### Storage
+
+Нужны bucket'ы:
+
+```text
+party-photos   private
+event-assets   public
+```
+
+`party-photos` используется для фото анкет через signed URLs.  
+`event-assets` используется для логотипов и обложек вечеринок.
+
+Рекомендуемые размеры:
+
+```text
+Фото анкеты: JPG/PNG/WebP, до 5 фото, до 2 MB каждое, лучше 1200 x 1600 px.
+Логотип: PNG/WebP, 1024 x 1024 px, до 500 KB, safe padding 20-25%.
+Обложка: JPG/WebP, 1600 x 900 px, до 1 MB.
+```
 
 ---
 
-## 4. Netlify: переменные окружения
-
-В Netlify Site settings -> Environment variables добавь:
+## Netlify Environment variables
 
 ```env
 VITE_SUPABASE_URL=https://xxxx.supabase.co
-VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
+VITE_SUPABASE_ANON_KEY=legacy-anon-public-key
 VITE_TELEGRAM_BOT_USERNAME=your_bot_username
 
 SUPABASE_URL=https://xxxx.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+SUPABASE_SERVICE_ROLE_KEY=legacy-service-role-key
 TELEGRAM_BOT_TOKEN=123456:bot-token
 TELEGRAM_BOT_USERNAME=your_bot_username
 APP_SESSION_SECRET=generate-a-long-random-secret
 ACCESS_KEY_PEPPER=generate-another-long-random-secret
 SITE_URL=https://your-site.netlify.app
+AWS_LAMBDA_JS_RUNTIME=nodejs22.x
+PNPM_VERSION=9.15.9
 ```
 
-Сгенерировать секреты можно так:
+Секреты можно сгенерировать так:
 
 ```bash
 node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
 ```
 
----
-
-## 5. Telegram Login: настройка
-
-### 5.1. Создай бота
-
-В Telegram открой `@BotFather`:
+После изменения переменных в Netlify нужен deploy:
 
 ```text
-/newbot
+Deploys -> Trigger deploy -> Clear cache and deploy site
 ```
 
-Сохрани:
+---
 
-- bot username;
-- bot token.
-
-### 5.2. Привяжи домен к боту
+## Telegram Login
 
 В `@BotFather`:
 
 ```text
+/newbot
 /setdomain
 ```
 
-Выбери бота и укажи домен сайта, например:
+Домен указывать без `https://`, например:
 
 ```text
 your-site.netlify.app
 ```
 
-Для продакшена лучше использовать нормальный домен.
-
-### 5.3. Добавь переменные
+Переменные:
 
 ```env
 VITE_TELEGRAM_BOT_USERNAME=your_bot_username
@@ -146,28 +142,36 @@ TELEGRAM_BOT_USERNAME=your_bot_username
 TELEGRAM_BOT_TOKEN=your_bot_token
 ```
 
-Telegram-вход проверяется на backend в функции `auth-telegram.ts`. Проверка на frontend не считается защитой, а считается декоративной салфеткой на пожаре.
-
 ---
 
-## 6. Google Login: настройка
+## Google Login
 
 1. В Google Cloud создай OAuth Client.
 2. В Supabase Dashboard открой Authentication -> Providers -> Google.
 3. Вставь Client ID и Client Secret.
-4. В Google Cloud добавь redirect URL из Supabase.
-5. На фронте Google вход идёт через `supabase.auth.signInWithOAuth`.
-6. После callback фронт вызывает `/api/auth-google`, backend создаёт внутреннюю сессию приложения.
+4. В Google Cloud добавь redirect URL из Supabase:
+
+```text
+https://PROJECT_REF.supabase.co/auth/v1/callback
+```
+
+5. В Supabase Authentication -> URL Configuration добавь:
+
+```text
+Site URL: https://your-site.netlify.app
+Redirect URLs:
+https://your-site.netlify.app/auth/callback
+https://your-site.netlify.app/*
+```
 
 ---
 
-## 7. Как сделать первого админа
+## Первый owner
 
-1. Зайди в приложение через Telegram или Google.
-2. Открой Supabase -> Table Editor -> `app_users`.
-3. Найди свой аккаунт.
-4. Скопируй `id`.
-5. В SQL Editor выполни:
+1. Войди в приложение через Google или Telegram.
+2. В Supabase открой `app_users` и найди свой аккаунт.
+3. Скопируй `id`.
+4. Выполни:
 
 ```sql
 insert into admin_users (app_user_id, role, is_active)
@@ -175,251 +179,19 @@ values ('PASTE_APP_USER_ID_HERE', 'owner', true)
 on conflict (app_user_id) do update set role = 'owner', is_active = true;
 ```
 
-После этого `/admin` откроется.
-
-Потом остальных админов можно добавлять так же или сделать в админке отдельный экран управления админами. Заготовка таблицы уже есть, но UI для добавления админов в MVP минимальный.
+После этого остальных админов можно добавлять в интерфейсе `/admin/admins` по email или Telegram username.
 
 ---
 
-## 8. Где генерируется ключ вечеринки
+## Основные сценарии проверки
 
-Ключ генерируется в админке:
-
-```text
-/admin/parties/:partyId
-```
-
-Там есть кнопка:
-
-```text
-Сгенерировать новый ключ
-```
-
-Что происходит:
-
-1. админ нажимает кнопку;
-2. frontend вызывает `/api/admin-generate-key`;
-3. backend генерирует ключ вида `KINKY-XXXXXX-XXXXXX`;
-4. в базе сохраняется только hash ключа;
-5. сам ключ показывается админу один раз;
-6. организаторы копируют ключ и раздают участникам.
-
-Если ключ потеряли - генерируют новый.
-
-Почему не хранить ключ открытым: потому что база не должна быть блокнотом с паролями. Мы всё-таки делаем приватность, а не музей плохих практик.
-
----
-
-## 9. Как создать вечеринку
-
-1. Войти как админ.
+1. Войти через Google.
 2. Открыть `/admin`.
-3. Нажать `Создать вечеринку`.
-4. Заполнить:
-   - название;
-   - slug;
-   - начало;
-   - конец;
-   - время открытия доступа;
-   - время закрытия доступа;
-   - описание;
-   - правила;
-   - дресс-код;
-   - Pinterest ссылки;
-   - theme JSON.
-5. Сохранить.
-6. Сгенерировать ключ.
-7. Отдать ключ организаторам.
-
-Для доступа за неделю и 48 часов после вечеринки:
-
-- `access_opens_at` = дата вечеринки минус 7 дней;
-- `access_closes_at` = конец вечеринки плюс 48 часов.
-
----
-
-## 10. Как работает участник
-
-1. Заходит на сайт.
-2. Входит через Telegram или Google.
-3. Вводит ключ вечеринки.
-4. Создаёт анкету.
-5. Смотрит анкеты других гостей.
-6. Ставит симпатии.
-7. Если симпатия взаимная, появляется мэтч.
-8. Только после мэтча открывается Telegram.
-9. Через 48 часов после вечеринки старое пространство закрывается.
-
----
-
-## 11. Что удаляется после 48 часов
-
-Scheduled function `cleanup-expired-parties.ts` раз в час ищет вечеринки, у которых прошёл `access_closes_at`.
-
-Она удаляет:
-
-- фото из `party-photos`;
-- анкеты;
-- лайки;
-- мэтчи;
-- жалобы;
-- доступы участников к вечеринке.
-
-Остаётся только техническая запись вечеринки без анкет и личных данных, чтобы админка понимала, что событие было закрыто.
-
----
-
-## 12. Тема дизайна
-
-В админке есть поле `Тема JSON`.
-
-Пример:
-
-```json
-{
-  "background": "#07070a",
-  "surface": "#12121a",
-  "surface2": "#191923",
-  "text": "#f8f5f2",
-  "mutedText": "#a9a3b4",
-  "accent": "#f5f2ec",
-  "button": "#f5f2ec",
-  "buttonText": "#09090c"
-}
-```
-
-Так можно менять оформление под Halloween, апокалипсис, красно-белую вечеринку и другие человеческие ритуалы с дресс-кодом.
-
----
-
-## 13. Что ещё стоит добавить после MVP
-
-- UI для добавления админов из админки;
-- предпросмотр темы;
-- загрузка логотипа/обложки через Storage, а не только URL;
-- фильтры по анкетам;
-- страница Privacy Policy;
-- отдельный consent screen перед созданием анкеты;
-- индивидуальные ключи вместо одного общего, если понадобится жёстче контролировать вход;
-- rate limit на лайки и жалобы;
-- ручной экспорт технической статистики без персональных данных.
-
----
-
-## 14. Важные ограничения текущей версии
-
-- Один общий ключ можно переслать. Это принято как компромисс для MVP, потому что организаторы сами контролируют раздачу.
-- Telegram Login зависит от домена, привязанного в BotFather.
-- Privacy Policy пока не написан, но чекбокс и место под текст уже заложены.
-- UI добавления админов можно расширить позже.
-- На проде нужно проверить CORS, cookies, HTTPS и домен. На Netlify HTTPS будет.
-
----
-
-## 16. Два языка: русский и английский
-
-Приложение теперь двуязычное: RU / EN.
-
-Что добавлено:
-
-- переключатель языка на странице входа и в верхнем меню;
-- словарь переводов в `src/lib/i18n.ts`;
-- локализованные тексты для основных страниц участника и админки;
-- локализованные варианты чекбоксов анкеты;
-- сохранение выбранного языка в `localStorage`;
-- автоматическая установка `lang` у HTML-документа.
-
-Важно: в базе теперь лучше хранить не русские подписи, а стабильные значения, например `men`, `women`, `flirt`, `no_photo`. А уже на экране они переводятся в русский или английский. Это скучно, зато не превращает данные в кашу, когда пользователь переключает язык.
-
-Где менять переводы:
-
-```text
-src/lib/i18n.ts
-```
-
-Где менять варианты анкеты:
-
-```text
-src/lib/options.ts
-```
-
----
-
-## 17. Скриншоты и приватность
-
-Коротко: в браузере и PWA невозможно полностью запретить скриншоты. Ни JavaScript, ни CSS не могут гарантированно запретить системный screenshot на iPhone, Android или десктопе. Браузер, конечно, считает себя главным героем этой трагедии.
-
-Что уже добавлено как best-effort защита:
-
-- запрет контекстного меню;
-- запрет копирования и выделения обычного текста;
-- запрет drag/drop у фото;
-- попытка очистить clipboard при нажатии PrintScreen;
-- затемнение/размытие контента, когда приложение теряет фокус или уходит в фон;
-- privacy notice на странице входа;
-- PWA manifest;
-- service worker-заготовка для установки как PWA.
-
-Файлы:
-
-```text
-src/lib/privacyGuard.ts
-src/styles/main.css
-public/manifest.webmanifest
-public/sw.js
-```
-
-Если нужна настоящая блокировка скриншотов на Android, нужен нативный слой: например Capacitor/Android с `FLAG_SECURE`. Для iOS полноценной системной блокировки скриншотов для обычной PWA нет. Поэтому в Privacy Policy всё равно стоит писать не “скриншоты невозможны”, а “скриншоты запрещены правилами, технически включены дополнительные меры приватности, за нарушение - бан/исключение”.
-
----
-
-## 18. PWA
-
-Добавлены:
-
-```text
-public/manifest.webmanifest
-public/sw.js
-```
-
-В `index.html` подключён manifest, а в `src/main.ts` регистрируется service worker.
-
-Это даёт базовую установку приложения на телефон как PWA. Для полноценной offline-логики ничего агрессивно не кэшируется, потому что это приложение с приватными анкетами, а не каталог рецептов кабачков. Приватные страницы лучше не складывать в офлайн-кэш без очень веской причины.
----
-
-## 19. Фирменный шрифт Futura PT / Future PT
-
-В проекте уже прописан фирменный шрифт в общей теме:
-
-```css
-font-family: 'Futura PT', 'Future PT', 'Avenir Next', Montserrat, Arial, sans-serif;
-```
-
-Файлы шрифта в архив не добавлены, потому что Futura PT обычно распространяется по лицензии. Не надо коммитить чужие font-файлы в репозиторий, если у организаторов нет права на webfont-использование. Да, даже шрифты умудрились стать юридическим болотом.
-
-Если организаторы пришлют лицензированные webfont-файлы, положи их в папку:
-
-```text
-public/fonts/
-```
-
-Ожидаемые имена файлов:
-
-```text
-FuturaPT-Book.woff2
-FuturaPT-Medium.woff2
-FuturaPT-Demi.woff2
-FuturaPT-Heavy.woff2
-```
-
-После этого сайт автоматически начнёт использовать Futura PT. Если файлов нет, интерфейс будет работать на похожем fallback-шрифте.
-
-В админке в поле темы тоже уже добавлен параметр:
-
-```json
-{
-  "fontFamily": "'Futura PT', 'Future PT', 'Avenir Next', Montserrat, Arial, sans-serif"
-}
-```
-
-Если позже понадобится другой фирменный шрифт под конкретную вечеринку, его можно поменять через тему события.
+3. Создать вечеринку.
+4. Скопировать код доступа.
+5. Зайти как участник и ввести код.
+6. Создать анкету с 1-5 фото.
+7. Проверить, что после сохранения открылась публичная preview-страница анкеты.
+8. Проверить список анкет, кнопку Open и кнопку Match.
+9. Создать второго участника, поставить взаимный match и проверить вкладку Matches.
+10. В `/admin/admins` добавить и удалить админа.

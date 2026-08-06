@@ -6,7 +6,11 @@
           <h1>{{ t('adminTitle') }}</h1>
           <p>{{ t('adminText') }}</p>
         </div>
-        <RouterLink class="button" to="/admin/parties/new">{{ t('createParty') }}</RouterLink>
+        <div class="action-row">
+          <RouterLink class="button secondary" to="/enter-key">{{ t('navApp') }}</RouterLink>
+          <RouterLink class="button secondary" to="/admin/admins">{{ t('admins') }}</RouterLink>
+          <RouterLink class="button" to="/admin/parties/new">{{ t('createParty') }}</RouterLink>
+        </div>
       </div>
       <p v-if="error" class="error">{{ error }}</p>
       <div class="table-card">
@@ -16,7 +20,7 @@
           </thead>
           <tbody>
             <tr v-for="party in parties" :key="party.id">
-              <td>{{ party.title }}</td>
+              <td>{{ localized(party, 'title') || party.title }}</td>
               <td>{{ new Date(party.starts_at).toLocaleString() }}</td>
               <td>{{ new Date(party.access_closes_at).toLocaleString() }}</td>
               <td>{{ party.is_active ? t('active') : t('closed') }}</td>
@@ -24,6 +28,7 @@
                 <RouterLink :to="`/admin/parties/${party.id}`">{{ t('settings') }}</RouterLink>
                 <RouterLink :to="`/admin/parties/${party.id}/profiles`">{{ t('profiles') }}</RouterLink>
                 <RouterLink :to="`/admin/parties/${party.id}/reports`">{{ t('reports') }}</RouterLink>
+                <RouterLink :to="`/party/${party.slug}`">{{ t('navApp') }}</RouterLink>
               </td>
             </tr>
           </tbody>
@@ -37,6 +42,7 @@
 import { onMounted, ref } from 'vue';
 import AppShell from '@/components/AppShell.vue';
 import { api } from '@/lib/api';
+import { localized } from '@/lib/localized';
 import { t } from '@/lib/i18n';
 
 const parties = ref<any[]>([]);

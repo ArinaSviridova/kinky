@@ -15,6 +15,7 @@
               <td>@{{ profile.telegram_username }}</td>
               <td>{{ profile.is_blocked ? t('blocked') : profile.is_visible ? t('visible') : t('hidden') }}</td>
               <td class="actions-cell">
+                <RouterLink class="button secondary small" :to="`/party/${partySlug}/profiles/${profile.id}`">{{ t('open') }}</RouterLink>
                 <button class="secondary small" @click="setVisibility(profile.id, !profile.is_visible)">{{ profile.is_visible ? t('hide') : t('show') }}</button>
                 <button class="danger small" @click="block(profile.id)">{{ t('block') }}</button>
               </td>
@@ -35,12 +36,14 @@ import { t } from '@/lib/i18n';
 
 const route = useRoute();
 const partyId = String(route.params.partyId);
+const partySlug = ref('');
 const profiles = ref<any[]>([]);
 const error = ref('');
 
 async function load() {
-  const data = await api<{ profiles: any[] }>(`admin-list-profiles?partyId=${partyId}`);
+  const data = await api<{ profiles: any[]; party?: any }>(`admin-list-profiles?partyId=${partyId}`);
   profiles.value = data.profiles;
+  if (data.party?.slug) partySlug.value = data.party.slug;
 }
 
 onMounted(async () => {

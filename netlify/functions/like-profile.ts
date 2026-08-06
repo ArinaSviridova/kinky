@@ -19,7 +19,7 @@ export async function handler(event: any) {
     const supabase = supabaseAdmin();
     const { data: myProfile } = await supabase.from('party_profiles').select('*').eq('party_id', partyId).eq('user_id', user.id).single();
     if (!myProfile) return error('Сначала создайте свою анкету', 403);
-    if (myProfile.id === toProfileId) return error('Самолайк - это мило, но нет', 400);
+    if (myProfile.id === toProfileId) return error('Нельзя поставить match своей анкете', 400);
 
     const { data: target } = await supabase
       .from('party_profiles')

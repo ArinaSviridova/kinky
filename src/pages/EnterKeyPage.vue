@@ -4,6 +4,14 @@
       <div class="card narrow">
         <h1>{{ t('partyKeyTitle') }}</h1>
         <p>{{ t('partyKeyText') }}</p>
+
+        <div v-if="parties.length" class="saved-parties">
+          <h2>{{ t('availableParties') }}</h2>
+          <RouterLink v-for="party in parties" :key="party.id" class="button secondary full-button" :to="`/party/${party.slug}`">
+            {{ localized(party, 'title') || party.title }}
+          </RouterLink>
+        </div>
+
         <form @submit.prevent="enter">
           <label>
             {{ t('partyKeyLabel') }}
@@ -18,16 +26,28 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import AppShell from '@/components/AppShell.vue';
-import { post } from '@/lib/api';
+import { api, post } from '@/lib/api';
+import { localized } from '@/lib/localized';
 import { t } from '@/lib/i18n';
 
 const router = useRouter();
 const key = ref('');
 const loading = ref(false);
 const error = ref('');
+const parties = ref<any[]>([]);
+
+onMounted(async () => {
+  try {
+    const data = await api<{ parties: any[] }>('list-my-parties');
+    parties.value = data.parties;
+    if (data.parties.length === 1) router.replace(`/party/${data.parties[0].slug}`);
+  } catch {
+    router.replace('/login');
+  }
+});
 
 async function enter() {
   loading.value = true;

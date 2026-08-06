@@ -17,6 +17,7 @@ import AdminDashboardPage from './pages/AdminDashboardPage.vue';
 import AdminPartyEditPage from './pages/AdminPartyEditPage.vue';
 import AdminProfilesPage from './pages/AdminProfilesPage.vue';
 import AdminReportsPage from './pages/AdminReportsPage.vue';
+import AdminAdminsPage from './pages/AdminAdminsPage.vue';
 
 const router = createRouter({
   history: createWebHistory(),
@@ -32,6 +33,7 @@ const router = createRouter({
     { path: '/party/:slug/profiles/:profileId', component: ProfileDetailsPage },
     { path: '/party/:slug/matches', component: MatchesPage },
     { path: '/admin', component: AdminDashboardPage },
+    { path: '/admin/admins', component: AdminAdminsPage },
     { path: '/admin/parties/new', component: AdminPartyEditPage },
     { path: '/admin/parties/:partyId', component: AdminPartyEditPage },
     { path: '/admin/parties/:partyId/profiles', component: AdminProfilesPage },

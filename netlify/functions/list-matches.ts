@@ -24,11 +24,13 @@ export async function handler(event: any) {
     if (!otherIds.length) return json({ matches: [] });
 
     const { data: profiles } = await supabase.from('party_profiles').select('*').in('id', otherIds).eq('is_blocked', false);
-    const signed = [];
-    for (const profile of profiles || []) {
-      profile.photo_urls_signed = await signPhotoPaths(profile.photo_urls || []);
-      signed.push(profile);
-    }
+    const photoPaths = (profiles || []).flatMap((profile) => Array.isArray(profile.photo_urls) ? profile.photo_urls : []);
+    const signedUrls = await signPhotoPaths(photoPaths);
+    const signedByPath = new Map(photoPaths.map((path, index) => [path, signedUrls[index]]));
+    const signed = (profiles || []).map((profile) => ({
+      ...profile,
+      photo_urls_signed: (profile.photo_urls || []).map((path: string) => signedByPath.get(path)).filter(Boolean),
+    }));
 
     return json({ matches: signed });
   } catch (e: any) {

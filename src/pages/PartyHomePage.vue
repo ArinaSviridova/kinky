@@ -10,8 +10,8 @@
       </div>
       <div>
         <p class="eyebrow">{{ t('closedPreParty') }}</p>
-        <h1>{{ party.title }}</h1>
-        <p>{{ party.description }}</p>
+        <h1>{{ localized(party, 'title') }}</h1>
+        <p>{{ localized(party, 'description') }}</p>
         <div class="action-row">
           <RouterLink class="button" :to="`/party/${slug}/profile/edit`">{{ t('myProfile') }}</RouterLink>
           <RouterLink class="button secondary" :to="`/party/${slug}/profiles`">{{ t('viewProfiles') }}</RouterLink>
@@ -42,6 +42,7 @@ import { useRoute } from 'vue-router';
 import AppShell from '@/components/AppShell.vue';
 import { api } from '@/lib/api';
 import { applyTheme } from '@/lib/theme';
+import { localized } from '@/lib/localized';
 import { t } from '@/lib/i18n';
 
 const route = useRoute();

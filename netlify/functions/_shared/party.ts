@@ -39,14 +39,10 @@ export async function requirePartyAccess(userId: string, partyId: string) {
 
 export async function signPhotoPaths(paths: string[] = []) {
   const supabase = supabaseAdmin();
-  const signed: string[] = [];
-
-  for (const path of paths) {
-    const { data } = await supabase.storage.from('party-photos').createSignedUrl(path, 60 * 60);
-    if (data?.signedUrl) signed.push(data.signedUrl);
-  }
-
-  return signed;
+  const cleanPaths = (paths || []).filter(Boolean);
+  if (!cleanPaths.length) return [];
+  const { data } = await supabase.storage.from('party-photos').createSignedUrls(cleanPaths, 60 * 60);
+  return (data || []).map((item) => item.signedUrl).filter(Boolean);
 }
 
 export async function cleanupPartyData(partyId: string) {

@@ -4,6 +4,7 @@
       <div class="card wide">
         <h1>{{ t('myProfile') }}</h1>
         <p>{{ t('profileOnlyForParty') }}</p>
+        <p class="muted">{{ t('previewAfterSave') }}</p>
 
         <form class="form-grid" @submit.prevent="save">
           <label>
@@ -17,8 +18,13 @@
           </label>
 
           <label class="full">
-            {{ t('aboutMe') }}
-            <textarea v-model="form.bio" required rows="5" :placeholder="t('aboutMePlaceholder')" />
+            {{ t('aboutMeRu') }}
+            <textarea v-model="form.bio_ru" required rows="5" :placeholder="t('aboutMePlaceholder')" />
+          </label>
+
+          <label class="full">
+            {{ t('aboutMeEn') }}
+            <textarea v-model="form.bio_en" rows="5" :placeholder="t('aboutMePlaceholder')" />
           </label>
 
           <label>
@@ -30,10 +36,17 @@
           </label>
 
           <label class="full">
-            {{ t('photo') }}
-            <input type="file" accept="image/*" @change="onFile" />
+            {{ t('photos') }}
+            <input type="file" accept="image/jpeg,image/png,image/webp" multiple @change="onFiles" />
             <small>{{ t('photoHelp') }}</small>
           </label>
+
+          <div v-if="photoPreviews.length" class="full photo-preview-grid">
+            <figure v-for="(photo, index) in photoPreviews" :key="photo.path || photo.url" class="photo-preview-card">
+              <img :src="photo.url" class="protected-media" :alt="`${t('photo')} ${index + 1}`" />
+              <button type="button" class="danger small" @click="removePhoto(index)">{{ t('removePhoto') }}</button>
+            </figure>
+          </div>
 
           <div class="full fieldset">
             <h2>{{ t('interestedIn') }}</h2>
@@ -45,10 +58,28 @@
             <MultiCheckbox v-model="form.looking_for" :options="lookingForOptions" />
           </div>
 
+          <label class="full">
+            {{ t('lookingForRu') }}
+            <textarea v-model="form.looking_for_text_ru" rows="3" />
+          </label>
+          <label class="full">
+            {{ t('lookingForEn') }}
+            <textarea v-model="form.looking_for_text_en" rows="3" />
+          </label>
+
           <div class="full fieldset">
             <h2>{{ t('approachPreferences') }}</h2>
             <MultiCheckbox v-model="form.approach_preferences" :options="approachOptions" />
           </div>
+
+          <label class="full">
+            {{ t('approachRu') }}
+            <textarea v-model="form.approach_text_ru" rows="3" />
+          </label>
+          <label class="full">
+            {{ t('approachEn') }}
+            <textarea v-model="form.approach_text_en" rows="3" />
+          </label>
 
           <div class="full fieldset">
             <h2>{{ t('boundaries') }}</h2>
@@ -56,8 +87,21 @@
           </div>
 
           <label class="full">
-            {{ t('icebreaker') }}
-            <input v-model="form.icebreaker" :placeholder="t('icebreakerPlaceholder')" />
+            {{ t('boundariesRu') }}
+            <textarea v-model="form.boundaries_text_ru" rows="3" />
+          </label>
+          <label class="full">
+            {{ t('boundariesEn') }}
+            <textarea v-model="form.boundaries_text_en" rows="3" />
+          </label>
+
+          <label class="full">
+            {{ t('icebreakerRu') }}
+            <input v-model="form.icebreaker_ru" :placeholder="t('icebreakerPlaceholder')" />
+          </label>
+          <label class="full">
+            {{ t('icebreakerEn') }}
+            <input v-model="form.icebreaker_en" :placeholder="t('icebreakerPlaceholder')" />
           </label>
 
           <div class="full consent-box">
@@ -77,7 +121,7 @@
 
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import AppShell from '@/components/AppShell.vue';
 import MultiCheckbox from '@/components/MultiCheckbox.vue';
 import { api, post } from '@/lib/api';
@@ -86,26 +130,41 @@ import { interestedInOptions, lookingForOptions, approachOptions, boundaryOption
 import { applyTheme } from '@/lib/theme';
 import { t } from '@/lib/i18n';
 
+const MAX_PHOTOS = 5;
+const MAX_FILE_SIZE = 2 * 1024 * 1024;
+
 const route = useRoute();
+const router = useRouter();
 const slug = String(route.params.slug);
 const party = ref<any>(null);
-const file = ref<File | null>(null);
+const files = ref<File[]>([]);
 const loading = ref(false);
 const error = ref('');
 const success = ref(false);
+const photoPreviews = ref<Array<{ path: string; url: string }>>([]);
 
 const form = reactive<any>({
   nickname: '',
   telegram_username: '',
   bio: '',
+  bio_ru: '',
+  bio_en: '',
   photo_urls: [],
   going_as: '',
   interested_in: [],
   looking_for: [],
+  looking_for_text_ru: '',
+  looking_for_text_en: '',
   approach_preferences: [],
+  approach_text_ru: '',
+  approach_text_en: '',
   boundaries: [],
+  boundaries_text_ru: '',
+  boundaries_text_en: '',
   languages: [],
   icebreaker: '',
+  icebreaker_ru: '',
+  icebreaker_en: '',
   confirmed_18_plus: false,
   accepted_rules: false,
   accepted_privacy: false,
@@ -117,29 +176,92 @@ onMounted(async () => {
   applyTheme(data.party.theme || {});
 
   const profile = await api<{ profile: any | null }>(`my-profile?partyId=${data.party.id}`);
-  if (profile.profile) Object.assign(form, profile.profile);
+  if (profile.profile) {
+    Object.assign(form, profile.profile);
+    form.bio_ru = profile.profile.bio_ru || profile.profile.bio || '';
+    form.bio_en = profile.profile.bio_en || '';
+    form.icebreaker_ru = profile.profile.icebreaker_ru || profile.profile.icebreaker || '';
+    form.icebreaker_en = profile.profile.icebreaker_en || '';
+    form.photo_urls = profile.profile.photo_urls || [];
+    photoPreviews.value = (profile.profile.photo_urls || []).map((path: string, index: number) => ({
+      path,
+      url: profile.profile.photo_urls_signed?.[index] || '/kinky-logo.png',
+    }));
+  }
 });
 
-function onFile(e: Event) {
+function onFiles(e: Event) {
   const target = e.target as HTMLInputElement;
-  file.value = target.files?.[0] || null;
+  const selected = Array.from(target.files || []);
+  if (selected.length + form.photo_urls.length > MAX_PHOTOS) {
+    error.value = t('photoLimitError');
+    target.value = '';
+    return;
+  }
+  files.value = selected;
 }
 
-async function uploadPhotoIfNeeded() {
-  if (!file.value || !party.value) return form.photo_urls || [];
+function removePhoto(index: number) {
+  form.photo_urls.splice(index, 1);
+  photoPreviews.value.splice(index, 1);
+}
 
-  const upload = await post<{ path: string; token: string }>('create-photo-upload-url', {
-    partyId: party.value.id,
-    fileName: file.value.name,
+function canvasToBlob(canvas: HTMLCanvasElement, type: string, quality: number) {
+  return new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error('Image compression failed')), type, quality);
+  });
+}
+
+async function compressImage(file: File) {
+  if (!file.type.startsWith('image/')) throw new Error('Unsupported file type');
+
+  const image = new Image();
+  const objectUrl = URL.createObjectURL(file);
+  await new Promise<void>((resolve, reject) => {
+    image.onload = () => resolve();
+    image.onerror = reject;
+    image.src = objectUrl;
   });
 
-  const { error: uploadError } = await supabase.storage
-    .from('party-photos')
-    .uploadToSignedUrl(upload.path, upload.token, file.value);
+  const maxWidth = 1200;
+  const scale = Math.min(1, maxWidth / image.width);
+  const width = Math.round(image.width * scale);
+  const height = Math.round(image.height * scale);
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Canvas is not available');
+  ctx.drawImage(image, 0, 0, width, height);
+  URL.revokeObjectURL(objectUrl);
 
-  if (uploadError) throw uploadError;
+  const type = 'image/webp';
+  const blob = await canvasToBlob(canvas, type, 0.82);
+  if (blob.size > MAX_FILE_SIZE) throw new Error(t('photoSizeError'));
+  const name = file.name.replace(/\.[^.]+$/, '') + '.webp';
+  return new File([blob], name, { type });
+}
 
-  return [upload.path];
+async function uploadNewPhotos() {
+  if (!files.value.length || !party.value) return form.photo_urls || [];
+
+  const uploaded: string[] = [];
+  for (const rawFile of files.value) {
+    const file = await compressImage(rawFile);
+    const upload = await post<{ path: string; token: string }>('create-photo-upload-url', {
+      partyId: party.value.id,
+      fileName: file.name,
+    });
+
+    const { error: uploadError } = await supabase.storage
+      .from('party-photos')
+      .uploadToSignedUrl(upload.path, upload.token, file);
+
+    if (uploadError) throw uploadError;
+    uploaded.push(upload.path);
+  }
+
+  return [...(form.photo_urls || []), ...uploaded].slice(0, MAX_PHOTOS);
 }
 
 async function save() {
@@ -148,11 +270,20 @@ async function save() {
   success.value = false;
 
   try {
-    const photo_urls = await uploadPhotoIfNeeded();
+    const photo_urls = await uploadNewPhotos();
     if (!photo_urls.length) throw new Error(t('photoRequiredError'));
+    if (photo_urls.length > MAX_PHOTOS) throw new Error(t('photoLimitError'));
 
-    await post('profile-save', { partyId: party.value.id, profile: { ...form, photo_urls } });
+    const payload = {
+      ...form,
+      bio: form.bio_ru || form.bio_en,
+      icebreaker: form.icebreaker_ru || form.icebreaker_en,
+      photo_urls,
+    };
+
+    const data = await post<{ profile: any }>('profile-save', { partyId: party.value.id, profile: payload });
     success.value = true;
+    router.push(`/party/${slug}/profiles/${data.profile.id}`);
   } catch (e: any) {
     error.value = e.message;
   } finally {

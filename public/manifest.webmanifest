@@ -1,16 +1,30 @@
 {
-  "name": "Kinky Party Pre-Party Match",
+  "name": "Pre-Party Match",
   "short_name": "Pre-Party",
+  "description": "Closed pre-party matching app for event participants.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#07070a",
   "theme_color": "#07070a",
   "icons": [
     {
-      "src": "/kinky-logo.png",
-      "sizes": "1024x1024",
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }

@@ -1,5 +1,13 @@
 [build]
+<<<<<<< HEAD
   command = "pnpm install --prod=false --no-frozen-lockfile && pnpm exec vite build"
+=======
+<<<<<<< HEAD
+  command = "pnpm build"
+=======
+  command = "npm install --include=dev && npx vite build"
+>>>>>>> 7172642 (Switch Netlify build to pnpm)
+>>>>>>> d0fe74a (Add pnpm lockfile)
   publish = "dist"
 
 [functions]

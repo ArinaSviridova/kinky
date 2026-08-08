@@ -42,11 +42,22 @@
           <p v-if="localized(profile, 'icebreaker')"><b>{{ t('icebreaker') }}:</b> {{ localized(profile, 'icebreaker') }}</p>
 
           <div v-if="!profile.isMine" class="action-row">
-            <button @click="like" :disabled="liked || loadingLike">{{ liked ? t('likedSent') : t('match') }}</button>
+            <button @click="like" :disabled="match || liked || loadingLike">{{ match ? t('matched') : liked ? t('likedSent') : t('match') }}</button>
             <button class="secondary" @click="report">{{ t('report') }}</button>
           </div>
           <RouterLink v-else class="button secondary" :to="`/party/${slug}/profile/edit`">{{ t('editProfile') }}</RouterLink>
-          <p v-if="match" class="success">{{ t('matchTelegramOpen') }}</p>
+          <div v-if="match" class="match-contact-box">
+            <p class="success">{{ t('matchTelegramOpen') }}</p>
+            <a
+              v-if="profile.telegram_username"
+              class="button small"
+              :href="`https://t.me/${String(profile.telegram_username).replace('@', '')}`"
+              target="_blank"
+              rel="noreferrer"
+            >
+              {{ t('openTelegram') }}
+            </a>
+          </div>
           <p v-if="error" class="error">{{ error }}</p>
         </div>
       </div>
@@ -88,9 +99,10 @@ async function like() {
   error.value = '';
   loadingLike.value = true;
   try {
-    const data = await post<{ matched: boolean }>('like-profile', { partyId: party.value.id, toProfileId: profileId });
+    const data = await post<{ matched: boolean; telegram_username?: string | null }>('like-profile', { partyId: party.value.id, toProfileId: profileId });
     liked.value = true;
     match.value = data.matched;
+    if (data.telegram_username) profile.value.telegram_username = data.telegram_username;
   } catch (e: any) {
     error.value = e.message;
   } finally {

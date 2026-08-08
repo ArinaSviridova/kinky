@@ -4,6 +4,8 @@ import { supabaseAdmin } from './_shared/supabase';
 import { error, json, parseBody } from './_shared/http';
 import { requirePartyAccess } from './_shared/party';
 
+const MAX_PHOTO_SIZE_BYTES = 500 * 1024;
+
 function safeFileName(name: string) {
   return name.replace(/[^a-zA-Z0-9._-]/g, '-').slice(0, 80);
 }
@@ -13,8 +15,9 @@ export async function handler(event: any) {
 
   try {
     const user = await requireUser(event);
-    const { partyId, fileName } = parseBody(event);
+    const { partyId, fileName, fileSize } = parseBody(event);
     if (!partyId || !fileName) return error('partyId and fileName required', 400);
+    if (Number(fileSize || 0) > MAX_PHOTO_SIZE_BYTES) return error('Одно фото после сжатия должно быть не больше 500 KB', 400);
     await requirePartyAccess(user.id, partyId);
 
     const supabase = supabaseAdmin();

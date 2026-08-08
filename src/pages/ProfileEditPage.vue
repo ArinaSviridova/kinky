@@ -131,7 +131,7 @@ import { applyTheme } from '@/lib/theme';
 import { t } from '@/lib/i18n';
 
 const MAX_PHOTOS = 5;
-const MAX_FILE_SIZE = 2 * 1024 * 1024;
+const MAX_FILE_SIZE = 500 * 1024;
 
 const route = useRoute();
 const router = useRouter();
@@ -222,23 +222,33 @@ async function compressImage(file: File) {
     image.src = objectUrl;
   });
 
-  const maxWidth = 1200;
-  const scale = Math.min(1, maxWidth / image.width);
-  const width = Math.round(image.width * scale);
-  const height = Math.round(image.height * scale);
-  const canvas = document.createElement('canvas');
-  canvas.width = width;
-  canvas.height = height;
-  const ctx = canvas.getContext('2d');
-  if (!ctx) throw new Error('Canvas is not available');
-  ctx.drawImage(image, 0, 0, width, height);
   URL.revokeObjectURL(objectUrl);
 
   const type = 'image/webp';
-  const blob = await canvasToBlob(canvas, type, 0.82);
-  if (blob.size > MAX_FILE_SIZE) throw new Error(t('photoSizeError'));
-  const name = file.name.replace(/\.[^.]+$/, '') + '.webp';
-  return new File([blob], name, { type });
+  const maxWidths = [1200, 1000, 800, 640];
+  const qualities = [0.82, 0.74, 0.66, 0.58, 0.5];
+
+  for (const maxWidth of maxWidths) {
+    const scale = Math.min(1, maxWidth / image.width);
+    const width = Math.max(1, Math.round(image.width * scale));
+    const height = Math.max(1, Math.round(image.height * scale));
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Canvas is not available');
+    ctx.drawImage(image, 0, 0, width, height);
+
+    for (const quality of qualities) {
+      const blob = await canvasToBlob(canvas, type, quality);
+      if (blob.size <= MAX_FILE_SIZE) {
+        const name = file.name.replace(/\.[^.]+$/, '') + '.webp';
+        return new File([blob], name, { type });
+      }
+    }
+  }
+
+  throw new Error(t('photoSizeError'));
 }
 
 async function uploadNewPhotos() {
@@ -250,6 +260,7 @@ async function uploadNewPhotos() {
     const upload = await post<{ path: string; token: string }>('create-photo-upload-url', {
       partyId: party.value.id,
       fileName: file.name,
+      fileSize: file.size,
     });
 
     const { error: uploadError } = await supabase.storage

@@ -757,3 +757,9 @@ body.privacy-blur::after {
     justify-content: center;
   }
 }
+
+.match-contact-box {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}

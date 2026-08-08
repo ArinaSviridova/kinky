@@ -21,10 +21,10 @@
             v-if="!profile.isMine"
             class="secondary small"
             type="button"
-            :disabled="profile.isLikedByMe || likingId === profile.id"
+            :disabled="profile.isMatched || profile.isLikedByMe || likingId === profile.id"
             @click="like(profile)"
           >
-            {{ profile.isLikedByMe ? t('likedSent') : t('match') }}
+            {{ profile.isMatched ? t('matched') : profile.isLikedByMe ? t('likedSent') : t('match') }}
           </button>
         </ProfileCard>
       </div>
@@ -74,9 +74,10 @@ async function like(profile: any) {
   error.value = '';
   likingId.value = profile.id;
   try {
-    const data = await post<{ matched: boolean }>('like-profile', { partyId: party.value.id, toProfileId: profile.id });
+    const data = await post<{ matched: boolean; telegram_username?: string | null }>('like-profile', { partyId: party.value.id, toProfileId: profile.id });
     profile.isLikedByMe = true;
     profile.isMatched = data.matched;
+    if (data.telegram_username) profile.telegram_username = data.telegram_username;
   } catch (e: any) {
     error.value = e.message;
   } finally {

@@ -5,7 +5,7 @@
       <p>{{ t('matchesText') }}</p>
       <div v-if="matches.length" class="profiles-grid">
         <ProfileCard v-for="profile in matches" :key="profile.id" :profile="profile">
-          <a class="button small" :href="`https://t.me/${profile.telegram_username.replace('@', '')}`" target="_blank" rel="noreferrer">{{ t('openTelegram') }}</a>
+          <a v-if="profile.telegram_username" class="button small" :href="`https://t.me/${String(profile.telegram_username).replace('@', '')}`" target="_blank" rel="noreferrer">{{ t('openTelegram') }}</a>
         </ProfileCard>
       </div>
       <div v-else class="card">

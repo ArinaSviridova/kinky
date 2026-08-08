@@ -11,6 +11,7 @@ Vue 3 + Vite + Supabase + Netlify Functions.
 - тексты вечеринки RU/EN;
 - до 5 фото в анкете;
 - Telegram скрыт до взаимного мэтча;
+- Telegram-бот для уведомлений о мэтчах, кодах доступа, жалобах и доступе к вечеринке;
 - админка для вечеринок, кодов доступа, анкет, жалоб и администраторов;
 - логотип и обложка загружаются в Supabase Storage;
 - PWA-иконки лежат в `public/icons`.
@@ -63,7 +64,7 @@ netlify dev
 scripts/migration-ux-updates.sql
 ```
 
-Миграция добавляет bilingual-поля, bucket `event-assets` и индексы для ускорения списков.
+Миграция добавляет bilingual-поля, bucket `event-assets`, индексы для ускорения списков и таблицы Telegram-уведомлений.
 
 ### Storage
 
@@ -98,6 +99,8 @@ SUPABASE_URL=https://xxxx.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=legacy-service-role-key
 TELEGRAM_BOT_TOKEN=123456:bot-token
 TELEGRAM_BOT_USERNAME=your_bot_username
+# optional, but recommended for webhook protection
+TELEGRAM_WEBHOOK_SECRET=generate-a-long-random-secret
 APP_SESSION_SECRET=generate-a-long-random-secret
 ACCESS_KEY_PEPPER=generate-another-long-random-secret
 SITE_URL=https://your-site.netlify.app
@@ -119,7 +122,7 @@ Deploys -> Trigger deploy -> Clear cache and deploy site
 
 ---
 
-## Telegram Login
+## Telegram Login and notifications
 
 В `@BotFather`:
 
@@ -140,7 +143,30 @@ your-site.netlify.app
 VITE_TELEGRAM_BOT_USERNAME=your_bot_username
 TELEGRAM_BOT_USERNAME=your_bot_username
 TELEGRAM_BOT_TOKEN=your_bot_token
+TELEGRAM_WEBHOOK_SECRET=optional-random-secret
 ```
+
+Для уведомлений нужно один раз поставить webhook после деплоя:
+
+```powershell
+$token="YOUR_TELEGRAM_BOT_TOKEN"
+$url="https://your-site.netlify.app/api/telegram-webhook"
+$secret="YOUR_TELEGRAM_WEBHOOK_SECRET"
+
+Invoke-RestMethod `
+  -Uri "https://api.telegram.org/bot$token/setWebhook" `
+  -Method Post `
+  -ContentType "application/json" `
+  -Body (@{ url = $url; secret_token = $secret } | ConvertTo-Json)
+```
+
+Если `TELEGRAM_WEBHOOK_SECRET` не используешь, убери `secret_token` из команды.
+
+Вход через Telegram и уведомления разделены:
+
+- кнопка входа авторизует пользователя на сайте через Telegram Login Widget;
+- кнопка "Включить уведомления" после входа открывает бота с одноразовым токеном;
+- `/start` без токена больше не молчит, а объясняет, что нужно открыть приложение и подключить уведомления.
 
 ---
 
@@ -195,6 +221,8 @@ on conflict (app_user_id) do update set role = 'owner', is_active = true;
 8. Проверить список анкет, кнопку Open и кнопку Match.
 9. Создать второго участника, поставить взаимный match и проверить вкладку Matches.
 10. В `/admin/admins` добавить и удалить админа.
+11. После деплоя поставить Telegram webhook и проверить `/start` в боте.
+12. В приложении нажать "Включить уведомления", затем Start в боте.
 
 ## UX/performance patch
 

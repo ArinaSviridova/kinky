@@ -2,6 +2,7 @@ import { requireAdmin } from './_shared/auth';
 import { supabaseAdmin } from './_shared/supabase';
 import { error, json, parseBody } from './_shared/http';
 import { generateAccessKey, hashAccessKey } from './_shared/party';
+import { notifyPartyCodeCreated } from './_shared/telegram';
 
 export async function handler(event: any) {
   if (event.httpMethod !== 'POST') return error('Method not allowed', 405);
@@ -13,6 +14,7 @@ export async function handler(event: any) {
     const supabase = supabaseAdmin();
     const { error: updateError } = await supabase.from('parties').update({ access_key_hash: hashAccessKey(key) }).eq('id', partyId);
     if (updateError) return error(updateError.message, 500);
+    await notifyPartyCodeCreated({ partyId, code: key });
     return json({ key });
   } catch (e: any) {
     return error(e.message === 'FORBIDDEN' ? 'Нет доступа' : e.message, e.message === 'FORBIDDEN' ? 403 : 400);

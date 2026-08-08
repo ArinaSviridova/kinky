@@ -74,3 +74,47 @@ where app_user_id is null and is_active = true and pending_telegram_username is 
 
 create index if not exists idx_admin_users_app_user_active
 on admin_users(app_user_id, is_active);
+
+-- Telegram bot notifications.
+alter table app_users add column if not exists telegram_chat_id bigint;
+alter table app_users add column if not exists telegram_notifications_enabled boolean default false;
+alter table app_users add column if not exists telegram_notifications_started_at timestamptz;
+alter table app_users add column if not exists telegram_notifications_blocked_at timestamptz;
+alter table app_users add column if not exists notification_language text default 'ru';
+
+create table if not exists telegram_link_tokens (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references app_users(id) on delete cascade,
+  token_hash text not null unique,
+  expires_at timestamptz not null,
+  used_at timestamptz,
+  created_at timestamptz default now()
+);
+
+create index if not exists idx_telegram_link_tokens_user_created
+on telegram_link_tokens(user_id, created_at desc);
+
+create index if not exists idx_telegram_link_tokens_expires
+on telegram_link_tokens(expires_at);
+
+create table if not exists notification_logs (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references app_users(id) on delete set null,
+  party_id uuid references parties(id) on delete cascade,
+  type text not null,
+  status text not null default 'queued',
+  payload jsonb default '{}'::jsonb,
+  error text,
+  dedupe_key text unique,
+  created_at timestamptz default now(),
+  sent_at timestamptz
+);
+
+create index if not exists idx_notification_logs_user_created
+on notification_logs(user_id, created_at desc);
+
+create index if not exists idx_notification_logs_party_type
+on notification_logs(party_id, type);
+
+create index if not exists idx_app_users_telegram_chat_enabled
+on app_users(telegram_chat_id, telegram_notifications_enabled);

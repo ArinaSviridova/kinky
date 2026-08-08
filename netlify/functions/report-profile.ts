@@ -2,6 +2,7 @@ import { requireUser } from './_shared/auth';
 import { supabaseAdmin } from './_shared/supabase';
 import { error, json, parseBody } from './_shared/http';
 import { requirePartyAccess } from './_shared/party';
+import { notifyReportCreated } from './_shared/telegram';
 
 export async function handler(event: any) {
   if (event.httpMethod !== 'POST') return error('Method not allowed', 405);
@@ -16,13 +17,16 @@ export async function handler(event: any) {
     const { data: myProfile } = await supabase.from('party_profiles').select('id').eq('party_id', partyId).eq('user_id', user.id).single();
     if (!myProfile) return error('Сначала создайте свою анкету', 403);
 
-    await supabase.from('profile_reports').insert({
+    const { data: reportRow, error: reportError } = await supabase.from('profile_reports').insert({
       party_id: partyId,
       reporter_profile_id: myProfile.id,
       reported_profile_id: reportedProfileId,
       reason,
       details,
-    });
+    }).select('id').single();
+
+    if (reportError) return error(reportError.message, 500);
+    await notifyReportCreated({ partyId, reportId: reportRow.id });
 
     return json({ ok: true });
   } catch (e: any) {

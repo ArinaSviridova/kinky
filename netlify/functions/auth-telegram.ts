@@ -25,7 +25,8 @@ export async function handler(event: any) {
   if (event.httpMethod !== 'POST') return error('Method not allowed', 405);
 
   const data = parseBody(event);
-  const botToken = process.env.TELEGRAM_BOT_TOKEN!;
+  const botToken = process.env.TELEGRAM_BOT_TOKEN;
+  if (!botToken) return error('TELEGRAM_BOT_TOKEN is missing', 500);
 
   if (!verifyTelegramAuth(data, botToken)) return error('Invalid Telegram auth', 401);
 

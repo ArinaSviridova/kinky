@@ -20,6 +20,8 @@ const backendErrorTranslations: Record<string, string> = {
   'Нет доступа к админке': 'No admin access',
   'Нет доступа': 'No access',
   'Ошибка запроса': 'Request error',
+  'TELEGRAM_BOT_USERNAME is missing': 'TELEGRAM_BOT_USERNAME is missing',
+  'TELEGRAM_BOT_TOKEN is missing': 'TELEGRAM_BOT_TOKEN is missing',
 };
 
 function translateError(message: string) {

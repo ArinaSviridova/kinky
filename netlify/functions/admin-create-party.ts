@@ -2,6 +2,7 @@ import { requireAdmin } from './_shared/auth';
 import { supabaseAdmin } from './_shared/supabase';
 import { error, json, parseBody } from './_shared/http';
 import { hashAccessKey, generateAccessKey, publicParty } from './_shared/party';
+import { notifyPartyCodeCreated } from './_shared/telegram';
 
 const allowed = [
   'title', 'title_ru', 'title_en', 'slug',
@@ -41,6 +42,7 @@ export async function handler(event: any) {
     }).select('*').single();
 
     if (createError) return error(createError.message, 500);
+    await notifyPartyCodeCreated({ partyId: party.id, code: key });
     return json({ party: publicParty(party), key });
   } catch (e: any) {
     return error(e.message === 'FORBIDDEN' ? 'Нет доступа' : e.message, e.message === 'FORBIDDEN' ? 403 : 400);

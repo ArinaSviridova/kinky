@@ -2,6 +2,7 @@ import { requireUser } from './_shared/auth';
 import { supabaseAdmin } from './_shared/supabase';
 import { error, json, parseBody } from './_shared/http';
 import { requirePartyAccess } from './_shared/party';
+import { notifyMatch } from './_shared/telegram';
 
 function orderedPair(a: string, b: string) {
   return a < b ? [a, b] : [b, a];
@@ -23,7 +24,7 @@ export async function handler(event: any) {
 
     const { data: target } = await supabase
       .from('party_profiles')
-      .select('id')
+      .select('id,user_id,nickname')
       .eq('id', toProfileId)
       .eq('party_id', partyId)
       .eq('is_visible', true)
@@ -39,8 +40,18 @@ export async function handler(event: any) {
     let matched = false;
     if (reciprocal) {
       const [profile_a_id, profile_b_id] = orderedPair(myProfile.id, toProfileId);
-      await supabase.from('profile_matches').upsert({ party_id: partyId, profile_a_id, profile_b_id }, { onConflict: 'profile_a_id,profile_b_id' });
+      const { data: matchRow } = await supabase
+        .from('profile_matches')
+        .upsert({ party_id: partyId, profile_a_id, profile_b_id }, { onConflict: 'profile_a_id,profile_b_id' })
+        .select('id')
+        .single();
       matched = true;
+      await notifyMatch({
+        partyId,
+        profileAUserId: myProfile.user_id,
+        profileBUserId: target.user_id,
+        matchId: matchRow?.id || `${profile_a_id}:${profile_b_id}`,
+      });
     }
 
     return json({ ok: true, matched });

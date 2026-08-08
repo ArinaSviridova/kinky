@@ -33,6 +33,27 @@
         <p>{{ t('after48Text') }}</p>
       </div>
     </section>
+
+    <section class="content compact-content" v-if="party">
+      <div class="card notification-card">
+        <div>
+          <h2>{{ t('telegramNotificationsTitle') }}</h2>
+          <p>{{ t('telegramNotificationsText') }}</p>
+          <p v-if="notificationsPending" class="success">{{ t('telegramNotificationsPending') }}</p>
+          <p v-if="notificationError" class="error">{{ notificationError }}</p>
+        </div>
+        <button
+          v-if="!notificationsEnabled"
+          type="button"
+          class="secondary"
+          :disabled="notificationLoading"
+          @click="connectTelegramNotifications"
+        >
+          {{ t('telegramNotificationsConnect') }}
+        </button>
+        <span v-else class="badge success-badge">{{ t('telegramNotificationsOn') }}</span>
+      </div>
+    </section>
   </AppShell>
 </template>
 
@@ -40,18 +61,43 @@
 import { onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import AppShell from '@/components/AppShell.vue';
-import { api } from '@/lib/api';
+import { api, post } from '@/lib/api';
 import { applyTheme } from '@/lib/theme';
 import { localized } from '@/lib/localized';
 import { t } from '@/lib/i18n';
+import { loadSession, resetSession } from '@/lib/session';
 
 const route = useRoute();
 const slug = String(route.params.slug);
 const party = ref<any>(null);
+const notificationsEnabled = ref(false);
+const notificationsPending = ref(false);
+const notificationLoading = ref(false);
+const notificationError = ref('');
 
 onMounted(async () => {
-  const data = await api<{ party: any }>(`get-party?slug=${encodeURIComponent(slug)}`);
-  party.value = data.party;
-  applyTheme(data.party.theme || {});
+  const [partyData, session] = await Promise.all([
+    api<{ party: any }>(`get-party?slug=${encodeURIComponent(slug)}`),
+    loadSession(),
+  ]);
+  party.value = partyData.party;
+  notificationsEnabled.value = Boolean(session.user?.telegram_notifications_enabled && session.user?.telegram_chat_id);
+  applyTheme(partyData.party.theme || {});
 });
+
+async function connectTelegramNotifications() {
+  notificationLoading.value = true;
+  notificationError.value = '';
+  notificationsPending.value = false;
+  try {
+    const data = await post<{ url: string }>('telegram-create-link', {});
+    notificationsPending.value = true;
+    resetSession();
+    window.location.href = data.url;
+  } catch (e: any) {
+    notificationError.value = e.message;
+  } finally {
+    notificationLoading.value = false;
+  }
+}
 </script>

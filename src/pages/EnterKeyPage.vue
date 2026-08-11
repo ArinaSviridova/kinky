@@ -55,7 +55,9 @@ async function enter() {
   loading.value = true;
   error.value = '';
   try {
-    const data = await post<{ party: { slug: string } }>('enter-party', { key: key.value });
+    const data = await post<{ party: { slug?: string } }>('enter-party', { key: key.value.trim() });
+    if (!data.party?.slug) throw new Error(t('partyLoadFailedText'));
+    document.body.classList.remove('privacy-blur');
     router.push(`/party/${data.party.slug}`);
   } catch (e: any) {
     error.value = e.message;

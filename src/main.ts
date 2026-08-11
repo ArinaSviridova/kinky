@@ -51,6 +51,22 @@ router.beforeEach(async (to) => {
 
 installPrivacyGuards();
 
+router.onError((err) => {
+  document.body.classList.remove('privacy-blur');
+  console.error('Router error:', err);
+  router.replace('/enter-key').catch(() => {});
+});
+
+window.addEventListener('error', (event) => {
+  document.body.classList.remove('privacy-blur');
+  console.error('App error:', event.error || event.message);
+});
+
+window.addEventListener('unhandledrejection', (event) => {
+  document.body.classList.remove('privacy-blur');
+  console.error('Unhandled rejection:', event.reason);
+});
+
 createApp(App).use(router).mount('#app');
 
 if ('serviceWorker' in navigator) {

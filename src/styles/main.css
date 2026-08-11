@@ -839,3 +839,14 @@ body.privacy-blur::after {
   color: var(--muted);
   line-height: 1.5;
 }
+
+@media (pointer: coarse) {
+  body.privacy-blur .privacy-content {
+    filter: none;
+    opacity: 1;
+  }
+  body.privacy-blur::after {
+    content: none;
+    display: none;
+  }
+}

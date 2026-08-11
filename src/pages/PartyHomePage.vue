@@ -101,6 +101,7 @@ const notificationLoading = ref(false);
 const notificationError = ref('');
 
 onMounted(async () => {
+  document.body.classList.remove('privacy-blur');
   try {
     const [partyData, session] = await Promise.all([
       api<{ party: any }>(`get-party?slug=${encodeURIComponent(slug)}`),
@@ -113,6 +114,7 @@ onMounted(async () => {
   } catch (e: any) {
     error.value = e.message || t('partyLoadFailedText');
   } finally {
+    document.body.classList.remove('privacy-blur');
     loading.value = false;
   }
 });

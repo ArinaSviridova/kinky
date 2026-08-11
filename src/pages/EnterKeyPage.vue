@@ -21,6 +21,7 @@
         </form>
         <p v-if="error" class="error">{{ error }}</p>
       </div>
+      <PwaInstallGuide />
     </section>
   </AppShell>
 </template>
@@ -29,6 +30,7 @@
 import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import AppShell from '@/components/AppShell.vue';
+import PwaInstallGuide from '@/components/PwaInstallGuide.vue';
 import { api, post } from '@/lib/api';
 import { localized } from '@/lib/localized';
 import { t } from '@/lib/i18n';

@@ -5,6 +5,7 @@
         <div class="section-head">
           <div>
             <h1>{{ isNew ? t('createParty') : t('partySettings') }}</h1>
+            <p>{{ t('partyScheduleHelp') }}</p>
           </div>
           <div v-if="!isNew" class="action-row">
             <RouterLink class="button secondary" :to="`/party/${form.slug}`">{{ t('navApp') }}</RouterLink>
@@ -22,20 +23,14 @@
             {{ t('titleEn') }}
             <input v-model="form.title_en" />
           </label>
-          <label>
+          <label class="full">
             {{ t('slugRequired') }}
             <input v-model="form.slug" required placeholder="halloween-2026" />
-          </label>
-          <label>
-            {{ t('themePreset') }}
-            <select v-model="themePreset">
-              <option value="default">{{ t('themeDefault') }}</option>
-              <option value="red-room">{{ t('themeRedRoom') }}</option>
-              <option value="minimal-black">{{ t('themeMinimalBlack') }}</option>
-            </select>
+            <small>{{ t('slugHelp') }}</small>
           </label>
 
-          <h2 class="full">{{ t('start') }}</h2>
+          <h2 class="full">{{ t('partySchedule') }}</h2>
+          <p class="full muted-form-text">{{ t('accessOpenImmediate') }}</p>
           <label>
             {{ t('eventDate') }}
             <input v-model="form.starts_date" type="date" required />
@@ -43,22 +38,6 @@
           <label>
             {{ t('eventTime') }}
             <input v-model="form.starts_time" type="time" required />
-          </label>
-          <label>
-            {{ t('endDate') }}
-            <input v-model="form.ends_date" type="date" required />
-          </label>
-          <label>
-            {{ t('endTime') }}
-            <input v-model="form.ends_time" type="time" required />
-          </label>
-          <label>
-            {{ t('openAccessDate') }}
-            <input v-model="form.access_opens_date" type="date" required />
-          </label>
-          <label>
-            {{ t('openAccessTime') }}
-            <input v-model="form.access_opens_time" type="time" required />
           </label>
           <label>
             {{ t('closeAccessDate') }}
@@ -167,7 +146,6 @@ const success = ref(false);
 const newKey = ref('');
 const copied = ref(false);
 const pinterestText = ref('');
-const themePreset = ref('default');
 const logoFile = ref<File | null>(null);
 const coverFile = ref<File | null>(null);
 
@@ -183,10 +161,7 @@ const form = reactive<any>({
   location_en: '',
   starts_date: '',
   starts_time: '',
-  ends_date: '',
-  ends_time: '',
-  access_opens_date: '',
-  access_opens_time: '',
+  access_opens_at: '',
   access_closes_date: '',
   access_closes_time: '',
   logo_url: '/kinky-logo.png',
@@ -201,86 +176,86 @@ const form = reactive<any>({
   theme: {},
 });
 
-const themes: Record<string, any> = {
-  default: {
-    preset: 'default',
-    background: '#07070a',
-    surface: '#12121a',
-    surface2: '#191923',
-    text: '#f8f5f2',
-    mutedText: '#a9a3b4',
-    accent: '#f5f2ec',
-    button: '#f5f2ec',
-    buttonText: '#09090c',
-  },
-  'red-room': {
-    preset: 'red-room',
-    background: '#090506',
-    surface: '#17090d',
-    surface2: '#251016',
-    text: '#fff7f7',
-    mutedText: '#c7a5ad',
-    accent: '#ff355d',
-    button: '#ff355d',
-    buttonText: '#ffffff',
-  },
-  'minimal-black': {
-    preset: 'minimal-black',
-    background: '#000000',
-    surface: '#0e0e0e',
-    surface2: '#171717',
-    text: '#ffffff',
-    mutedText: '#b3b3b3',
-    accent: '#ffffff',
-    button: '#ffffff',
-    buttonText: '#000000',
-  },
+const defaultTheme = {
+  preset: 'default',
+  background: '#07070a',
+  surface: '#12121a',
+  surface2: '#191923',
+  text: '#f8f5f2',
+  mutedText: '#a9a3b4',
+  accent: '#f5f2ec',
+  button: '#f5f2ec',
+  buttonText: '#09090c',
 };
+
+function pad(value: number) {
+  return String(value).padStart(2, '0');
+}
+
+function toLocalParts(date: Date) {
+  return {
+    date: `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`,
+    time: `${pad(date.getHours())}:${pad(date.getMinutes())}`,
+  };
+}
 
 function splitDateTime(value: string) {
   if (!value) return { date: '', time: '' };
   const d = new Date(value);
-  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-  const text = d.toISOString().slice(0, 16);
-  const [date, time] = text.split('T');
-  return { date, time };
+  if (Number.isNaN(d.getTime())) return { date: '', time: '' };
+  return toLocalParts(d);
 }
 
 function combineDateTime(date: string, time: string) {
   return new Date(`${date}T${time || '00:00'}`).toISOString();
 }
 
+function setDefaultDates() {
+  const start = new Date();
+  start.setSeconds(0, 0);
+  const close = new Date(start.getTime() + 48 * 60 * 60 * 1000);
+  const startParts = toLocalParts(start);
+  const closeParts = toLocalParts(close);
+  form.starts_date = startParts.date;
+  form.starts_time = startParts.time;
+  form.access_opens_at = start.toISOString();
+  form.access_closes_date = closeParts.date;
+  form.access_closes_time = closeParts.time;
+}
+
 function fillDates(party: any) {
   const starts = splitDateTime(party.starts_at);
   form.starts_date = starts.date;
   form.starts_time = starts.time;
-  const ends = splitDateTime(party.ends_at);
-  form.ends_date = ends.date;
-  form.ends_time = ends.time;
-  const opens = splitDateTime(party.access_opens_at);
-  form.access_opens_date = opens.date;
-  form.access_opens_time = opens.time;
-  const closes = splitDateTime(party.access_closes_at);
+  form.access_opens_at = party.access_opens_at || new Date().toISOString();
+  const closes = splitDateTime(party.access_closes_at || party.ends_at);
   form.access_closes_date = closes.date;
   form.access_closes_time = closes.time;
 }
 
 onMounted(async () => {
-  if (isNew.value) return;
-  const data = await api<{ party: any }>(`admin-get-party?partyId=${partyId.value}`);
-  const party = data.party;
-  Object.assign(form, party);
-  form.title_ru = party.title_ru || party.title || '';
-  form.title_en = party.title_en || '';
-  form.description_ru = party.description_ru || party.description || '';
-  form.description_en = party.description_en || '';
-  form.rules_text_ru = party.rules_text_ru || party.rules_text || '';
-  form.rules_text_en = party.rules_text_en || '';
-  form.dress_code_text_ru = party.dress_code_text_ru || party.dress_code_text || '';
-  form.dress_code_text_en = party.dress_code_text_en || '';
-  fillDates(party);
-  pinterestText.value = (party.pinterest_links || []).join('\n');
-  themePreset.value = party.theme?.preset || 'default';
+  if (isNew.value) {
+    setDefaultDates();
+    return;
+  }
+
+  try {
+    const data = await api<{ party: any }>(`admin-get-party?partyId=${partyId.value}`);
+    const party = data.party;
+    Object.assign(form, party);
+    form.title_ru = party.title_ru || party.title || '';
+    form.title_en = party.title_en || '';
+    form.description_ru = party.description_ru || party.description || '';
+    form.description_en = party.description_en || '';
+    form.rules_text_ru = party.rules_text_ru || party.rules_text || '';
+    form.rules_text_en = party.rules_text_en || '';
+    form.dress_code_text_ru = party.dress_code_text_ru || party.dress_code_text || '';
+    form.dress_code_text_en = party.dress_code_text_en || '';
+    fillDates(party);
+    pinterestText.value = (party.pinterest_links || []).join('\n');
+  } catch (e: any) {
+    error.value = e.message;
+  }
 });
 
 function onAssetFile(e: Event, type: 'logo' | 'cover') {
@@ -306,6 +281,9 @@ async function uploadAsset(currentPartyId: string, file: File, type: 'logo' | 'c
 }
 
 async function buildPayload(currentPartyId?: string) {
+  const startsAt = combineDateTime(form.starts_date, form.starts_time);
+  const accessClosesAt = combineDateTime(form.access_closes_date, form.access_closes_time);
+
   const payload: any = {
     title: form.title_ru,
     title_ru: form.title_ru,
@@ -316,10 +294,10 @@ async function buildPayload(currentPartyId?: string) {
     description_en: form.description_en,
     location_ru: form.location_ru,
     location_en: form.location_en,
-    starts_at: combineDateTime(form.starts_date, form.starts_time),
-    ends_at: combineDateTime(form.ends_date, form.ends_time),
-    access_opens_at: combineDateTime(form.access_opens_date, form.access_opens_time),
-    access_closes_at: combineDateTime(form.access_closes_date, form.access_closes_time),
+    starts_at: startsAt,
+    ends_at: accessClosesAt,
+    access_opens_at: form.access_opens_at || new Date().toISOString(),
+    access_closes_at: accessClosesAt,
     logo_url: form.logo_url || '/kinky-logo.png',
     cover_url: form.cover_url || null,
     rules_text: form.rules_text_ru,
@@ -329,7 +307,7 @@ async function buildPayload(currentPartyId?: string) {
     dress_code_text_ru: form.dress_code_text_ru,
     dress_code_text_en: form.dress_code_text_en,
     pinterest_links: pinterestText.value.split('\n').map((x) => x.trim()).filter(Boolean),
-    theme: themes[themePreset.value] || themes.default,
+    theme: form.theme && Object.keys(form.theme).length ? form.theme : defaultTheme,
   };
 
   if (currentPartyId) {
@@ -366,6 +344,7 @@ async function save() {
     Object.assign(form, data.party);
     form.title_ru = data.party.title_ru || data.party.title || '';
     form.description_ru = data.party.description_ru || data.party.description || '';
+    fillDates(data.party);
     success.value = true;
   } catch (e: any) {
     error.value = e.message;

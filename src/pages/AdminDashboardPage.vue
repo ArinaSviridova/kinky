@@ -8,8 +8,8 @@
         </div>
         <div class="action-row">
           <RouterLink class="button secondary" to="/enter-key">{{ t('navApp') }}</RouterLink>
-          <RouterLink class="button secondary" to="/admin/admins">{{ t('admins') }}</RouterLink>
-          <RouterLink class="button" to="/admin/parties/new">{{ t('createParty') }}</RouterLink>
+          <RouterLink v-if="canManageAdmins" class="button secondary" to="/admin/admins">{{ t('admins') }}</RouterLink>
+          <RouterLink v-if="canCreateParties" class="button" to="/admin/parties/new">{{ t('createParty') }}</RouterLink>
         </div>
       </div>
       <p v-if="error" class="error">{{ error }}</p>
@@ -25,11 +25,11 @@
               <td>{{ new Date(party.access_closes_at).toLocaleString() }}</td>
               <td>{{ party.is_active ? t('active') : t('closed') }}</td>
               <td class="actions-cell">
-                <RouterLink :to="`/admin/parties/${party.id}`">{{ t('settings') }}</RouterLink>
-                <RouterLink :to="`/admin/parties/${party.id}/profiles`">{{ t('profiles') }}</RouterLink>
-                <RouterLink :to="`/admin/parties/${party.id}/reports`">{{ t('reports') }}</RouterLink>
+                <RouterLink v-if="canEditParty" :to="`/admin/parties/${party.id}`">{{ t('settings') }}</RouterLink>
+                <RouterLink v-if="canModerate" :to="`/admin/parties/${party.id}/profiles`">{{ t('profiles') }}</RouterLink>
+                <RouterLink v-if="canModerate" :to="`/admin/parties/${party.id}/reports`">{{ t('reports') }}</RouterLink>
                 <RouterLink :to="`/party/${party.slug}`">{{ t('navApp') }}</RouterLink>
-                <button class="danger small" type="button" @click="deleteParty(party)">{{ t('deleteParty') }}</button>
+                <button v-if="canDeleteParties" class="danger small" type="button" @click="deleteParty(party)">{{ t('deleteParty') }}</button>
               </td>
             </tr>
           </tbody>
@@ -40,18 +40,30 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import AppShell from '@/components/AppShell.vue';
 import { api, post } from '@/lib/api';
 import { localized } from '@/lib/localized';
 import { t } from '@/lib/i18n';
+import { loadSession } from '@/lib/session';
 
 const parties = ref<any[]>([]);
 const error = ref('');
+const adminRole = ref<string | null>(null);
+
+const canManageAdmins = computed(() => adminRole.value === 'owner');
+const canCreateParties = computed(() => ['owner', 'admin'].includes(adminRole.value || ''));
+const canDeleteParties = computed(() => ['owner', 'admin'].includes(adminRole.value || ''));
+const canEditParty = computed(() => ['owner', 'admin', 'editor'].includes(adminRole.value || ''));
+const canModerate = computed(() => ['owner', 'admin', 'moderator'].includes(adminRole.value || ''));
 
 async function load() {
-  const data = await api<{ parties: any[] }>('admin-list-parties');
+  const [data, session] = await Promise.all([
+    api<{ parties: any[] }>('admin-list-parties'),
+    loadSession(),
+  ]);
   parties.value = data.parties;
+  adminRole.value = session.adminRole;
 }
 
 onMounted(async () => {

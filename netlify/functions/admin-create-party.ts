@@ -18,6 +18,9 @@ const allowed = [
 function cleanParty(body: any) {
   const cleaned: any = {};
   for (const key of allowed) if (body[key] !== undefined) cleaned[key] = body[key];
+  const now = new Date();
+  const defaultClose = new Date(now.getTime() + 48 * 60 * 60 * 1000);
+
   cleaned.title = cleaned.title_ru || cleaned.title || cleaned.title_en;
   cleaned.description = cleaned.description_ru || cleaned.description || cleaned.description_en || null;
   cleaned.rules_text = cleaned.rules_text_ru || cleaned.rules_text || cleaned.rules_text_en || null;
@@ -25,13 +28,17 @@ function cleanParty(body: any) {
   cleaned.logo_url = cleaned.logo_url || '/kinky-logo.png';
   cleaned.pinterest_links = Array.isArray(cleaned.pinterest_links) ? cleaned.pinterest_links : [];
   cleaned.theme = cleaned.theme || {};
+  cleaned.starts_at = cleaned.starts_at || now.toISOString();
+  cleaned.access_opens_at = cleaned.access_opens_at || now.toISOString();
+  cleaned.access_closes_at = cleaned.access_closes_at || defaultClose.toISOString();
+  cleaned.ends_at = cleaned.ends_at || cleaned.access_closes_at;
   return cleaned;
 }
 
 export async function handler(event: any) {
   if (event.httpMethod !== 'POST') return error('Method not allowed', 405);
   try {
-    await requireAdmin(event, ['owner', 'admin']);
+    const { user } = await requireAdmin(event, ['owner', 'admin']);
     const body = cleanParty(parseBody(event));
     const key = generateAccessKey();
     const supabase = supabaseAdmin();
@@ -42,6 +49,11 @@ export async function handler(event: any) {
     }).select('*').single();
 
     if (createError) return error(createError.message, 500);
+
+    await supabase
+      .from('party_access')
+      .upsert({ party_id: party.id, user_id: user.id }, { onConflict: 'party_id,user_id' });
+
     await notifyPartyCodeCreated({ partyId: party.id, code: key });
     return json({ party: publicParty(party), key });
   } catch (e: any) {

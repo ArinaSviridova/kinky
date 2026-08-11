@@ -763,3 +763,79 @@ body.privacy-blur::after {
   gap: 10px;
   margin-top: 14px;
 }
+
+.role-help-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin: 18px 0 24px;
+}
+
+.role-help-card,
+.pwa-guide-card {
+  background: rgba(255,255,255,0.045);
+  border: 1px solid var(--border);
+}
+
+.role-help-card {
+  border-radius: 20px;
+  padding: 16px;
+}
+
+.role-help-card h3,
+.pwa-guide-card h3 {
+  margin: 0 0 8px;
+}
+
+.inline-role-control {
+  display: grid;
+  grid-template-columns: minmax(145px, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  min-width: 260px;
+}
+
+.inline-role-control select {
+  margin-top: 0;
+  min-height: 38px;
+  padding: 0.55rem 0.75rem;
+  border-radius: 14px;
+}
+
+.pwa-guide-card {
+  max-width: 920px;
+  width: 100%;
+  margin: 18px auto 0;
+}
+
+.pwa-guide-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  margin-top: 16px;
+}
+
+.pwa-guide-grid ol {
+  margin: 0;
+  padding-left: 1.25rem;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+@media (max-width: 820px) {
+  .role-help-grid,
+  .pwa-guide-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .inline-role-control {
+    grid-template-columns: minmax(0, 1fr);
+    min-width: 220px;
+  }
+}
+
+.muted-form-text {
+  margin: -4px 0 2px;
+  color: var(--muted);
+  line-height: 1.5;
+}
